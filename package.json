@@ -1,0 +1,42 @@
+{
+  "name": "premiertaxitracker",
+  "version": "1.0.0",
+  "description": "Real-Time Three-Wheeler (Tuk-Tuk) Tracking &amp; Movement Logging System for Law  Enforcement (Sri Lanka)",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "jest --runInBand --forceExit",
+    "lint": "eslint src tests"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Deetra-X/PremierTaxiTracker.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Deetra-X/PremierTaxiTracker/issues"
+  },
+  "homepage": "https://github.com/Deetra-X/PremierTaxiTracker#readme",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.8.0",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.2.0",
+    "globals": "^17.4.0",
+    "jest": "^30.3.0",
+    "supertest": "^7.2.2"
+  }
+}
