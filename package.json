@@ -5,7 +5,7 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "test": "jest --runInBand --forceExit",
+    "test": "NODE_ENV=test jest --runInBand --forceExit",
     "lint": "eslint src tests"
   },
   "jest": {
@@ -30,6 +30,7 @@
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.8.0",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.3.2",
     "jsonwebtoken": "^9.0.3"
   },
   "devDependencies": {
