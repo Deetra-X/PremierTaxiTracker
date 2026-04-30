@@ -1,0 +1,20 @@
+{
+  "name": "tuk-tuk-api",
+  "version": "1.0.0",
+  "description": "REST API for real-time tuk-tuk tracking and movement logging",
+  "type": "module",
+  "main": "scripts/dbCheck.js",
+  "scripts": {
+    "db:check": "node scripts/dbCheck.js",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "pg": "^8.16.3",
+    "sequelize": "^6.37.7"
+  },
+  "devDependencies": {
+    "eslint": "^9.36.0",
+    "nodemon": "^3.1.10"
+  }
+}
