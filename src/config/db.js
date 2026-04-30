@@ -1,29 +1,24 @@
 import { getEnv } from "./env.js";
-import { Sequelize } from "sequelize";
+import pg from "pg";
 
-export const sequelize = new Sequelize(getEnv("DATABASE_URL"), {
-  dialect: "postgres",
-  logging: false,
-  dialectOptions: {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false
-    }
-  }
+const { Pool } = pg;
+
+export const pool = new Pool({
+  connectionString: getEnv("DATABASE_URL"),
+  ssl: { rejectUnauthorized: false }
 });
 
-export async function connectDb(
-  { sync = false, force = false, alter = false } = { sync: false }
-) {
-  await sequelize.authenticate();
-
-  if (sync) {
-    await sequelize.sync({ force, alter });
+export async function connectDb() {
+  const client = await pool.connect();
+  try {
+    await client.query("select 1");
+  } finally {
+    client.release();
   }
 
-  return sequelize;
+  return pool;
 }
 
 export async function disconnectDb() {
-  await sequelize.close();
+  await pool.end();
 }

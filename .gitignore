@@ -1,5 +1,33 @@
+# dependencies
 node_modules/
-data/runtime-store.json
+
+# env / secrets
 .env
-coverage/
+.env.*.local
+
+# logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# build outputs
 dist/
+build/
+coverage/
+
+# caches
+.eslintcache
+.cache/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# editor (optional)
+.vscode/
+.idea/
+
+database_file(table design).sql
