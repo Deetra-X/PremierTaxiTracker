@@ -2,10 +2,12 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
+import swaggerUi from "swagger-ui-express";
 
 import { apiErrorHandler } from "./middleware/error.middleware.js";
 import { createRateLimiters } from "./middleware/rateLimit.middleware.js";
 import { routes } from "./routes/index.js";
+import { buildOpenApiSpec } from "./openapi/openapi.js";
 
 export function createApp() {
   const app = express();
@@ -19,6 +21,10 @@ export function createApp() {
   app.use(limits.global);
 
   app.get("/health", (req, res) => res.json({ ok: true }));
+
+  const openapi = buildOpenApiSpec();
+  app.get("/api/openapi.json", (_req, res) => res.json(openapi));
+  app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openapi, { explorer: true }));
 
   app.use("/api", routes(limits));
 

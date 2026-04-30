@@ -196,3 +196,83 @@ export async function getHistory({ query, user }) {
   return r.rows;
 }
 
+export async function getLiveSearch({ query, user }) {
+  const q = String(query.q ?? "").trim();
+  if (!q) throw createHttpError(400, "Invalid query", "VALIDATION_ERROR");
+
+  const provinceId = query.provinceId ?? null;
+  const districtId = query.districtId ?? null;
+  const stationId = query.stationId ?? null;
+
+  enforceScopeSync({ user, provinceId, districtId, stationId });
+
+  if (
+    user.role === "PROVINCIAL_OFFICER" &&
+    districtId &&
+    !(await districtBelongsToProvince(districtId, user.scope.provinceId))
+  ) {
+    throw createHttpError(403, "Forbidden (district not in province)", "FORBIDDEN");
+  }
+
+  const where = [];
+  const params = [];
+
+  // Search targets: registration plate, driver NIC, driver name
+  params.push(`%${q}%`);
+  where.push(
+    `(t.registration_number ilike $${params.length} or d.nic_number ilike $${params.length} or d.full_name ilike $${params.length})`
+  );
+
+  if (provinceId) {
+    params.push(provinceId);
+    where.push(`t.province_id = $${params.length}`);
+  }
+  if (districtId) {
+    params.push(districtId);
+    where.push(`t.district_id = $${params.length}`);
+  }
+  if (stationId) {
+    params.push(stationId);
+    where.push(`t.station_id = $${params.length}`);
+  }
+
+  // If not HQ, enforce minimum scope (implicit filter)
+  if (user.role === "PROVINCIAL_OFFICER") {
+    params.push(user.scope.provinceId);
+    where.push(`t.province_id = $${params.length}`);
+  } else if (user.role === "DISTRICT_OFFICER") {
+    params.push(user.scope.districtId);
+    where.push(`t.district_id = $${params.length}`);
+  } else if (user.role === "STATION_OFFICER") {
+    params.push(user.scope.stationId);
+    where.push(`t.station_id = $${params.length}`);
+  }
+
+  const whereSql = where.length ? `where ${where.join(" and ")}` : "";
+
+  const sql = `
+    select distinct on (t.tuk_tuk_id)
+      t.tuk_tuk_id,
+      t.registration_number,
+      d.driver_id,
+      d.full_name as driver_name,
+      d.nic_number as driver_nic_number,
+      t.province_id,
+      t.district_id,
+      t.station_id,
+      ll.latitude,
+      ll.longitude,
+      ll.speed_kmh,
+      ll.recorded_at
+    from tuk_tuks t
+    left join drivers d on d.driver_id = t.driver_id
+    left join location_logs ll on ll.tuk_tuk_id = t.tuk_tuk_id
+    ${whereSql}
+    order by t.tuk_tuk_id, ll.recorded_at desc nulls last
+    limit 50
+  `;
+
+  const r = await pool.query(sql, params);
+  return r.rows;
+}
+

@@ -4,6 +4,18 @@ node_modules/
 # env / secrets
 .env
 .env.*.local
+.env.local
+.env.*.secret
+
+# common secret files
+*.pem
+*.key
+*.crt
+*.cer
+*.pfx
+*.p12
+id_rsa
+id_ed25519
 
 # logs
 logs/
@@ -29,5 +41,3 @@ Thumbs.db
 # editor (optional)
 .vscode/
 .idea/
-
-database_file(table design).sql

@@ -6,7 +6,14 @@ import { pool } from "../src/config/db.js";
 // Usage: node scripts/createDistrictOfficerDemo.js <districtId> <email> <password>
 const districtId = Number(process.argv[2] ?? 1);
 const email = process.argv[3] ?? "district.officer@police.lk";
-const password = process.argv[4] ?? "Password123!";
+const password = process.argv[4] ?? null;
+
+if (!password) {
+  // eslint-disable-next-line no-console
+  console.error("Usage: node scripts/createDistrictOfficerDemo.js <districtId> <email> <password>");
+  process.exitCode = 2;
+  process.exit();
+}
 
 const station = await pool.query(
   "select station_id from police_stations where district_id = $1 order by station_id limit 1",
@@ -33,6 +40,6 @@ await pool.query(
 );
 
 // eslint-disable-next-line no-console
-console.log("District officer ready:", { districtId, email, password });
+console.log("District officer ready:", { districtId, email });
 process.exit();
 

@@ -1,0 +1,17 @@
+{
+  "name": "Tuk-Tuk API",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "postCreateCommand": "npm install",
+  "forwardPorts": [3000, 3001, 3002, 3003, 3004],
+  "portsAttributes": {
+    "3000": { "label": "Tuk-Tuk API" }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint"
+      ]
+    }
+  }
+}
+
