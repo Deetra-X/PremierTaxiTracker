@@ -6,6 +6,8 @@
   "main": "scripts/dbCheck.js",
   "scripts": {
     "db:check": "node scripts/dbCheck.js",
+    "db:apply": "node scripts/dbApplySql.js",
+    "db:tables": "node scripts/dbListTables.js",
     "lint": "eslint ."
   },
   "dependencies": {
