@@ -10,6 +10,55 @@ async function districtBelongsToProvince(districtId, provinceId) {
   return Boolean(r.rowCount);
 }
 
+async function stationBelongsToDistrict(stationId, districtId) {
+  const r = await pool.query(
+    "select 1 from police_stations where station_id = $1 and district_id = $2",
+    [stationId, districtId]
+  );
+  return Boolean(r.rowCount);
+}
+
+function assertRequestedScopeWithinUserScope({ user, requested }) {
+  const role = user?.role;
+  const scope = user?.scope;
+  if (!role || !scope) throw createHttpError(401, "Unauthorized", "UNAUTHORIZED");
+
+  const { provinceId, districtId, stationId } = requested ?? {};
+
+  if (role === "HQ_ADMIN") return;
+
+  if (role === "PROVINCIAL_OFFICER") {
+    if (provinceId && Number(provinceId) !== Number(scope.provinceId)) {
+      throw createHttpError(403, "Forbidden (province scope)", "FORBIDDEN");
+    }
+    return;
+  }
+
+  if (role === "DISTRICT_OFFICER") {
+    // Strict: district officers must not use province-wide filters at all.
+    if (provinceId) {
+      throw createHttpError(403, "Forbidden (cannot widen to province)", "FORBIDDEN");
+    }
+    if (districtId && Number(districtId) !== Number(scope.districtId)) {
+      throw createHttpError(403, "Forbidden (district scope)", "FORBIDDEN");
+    }
+    return;
+  }
+
+  if (role === "STATION_OFFICER") {
+    // Strict: station officers must not use province/district filters (only station-level access).
+    if (provinceId || districtId) {
+      throw createHttpError(403, "Forbidden (cannot widen beyond station)", "FORBIDDEN");
+    }
+    if (stationId && Number(stationId) !== Number(scope.stationId)) {
+      throw createHttpError(403, "Forbidden (station scope)", "FORBIDDEN");
+    }
+    return;
+  }
+
+  throw createHttpError(403, "Forbidden", "FORBIDDEN");
+}
+
 function withEffectiveScope({ user, provinceId, districtId, stationId }) {
   const role = user?.role;
   const scope = user?.scope;
@@ -20,17 +69,36 @@ function withEffectiveScope({ user, provinceId, districtId, stationId }) {
   }
 
   if (role === "PROVINCIAL_OFFICER") {
-    // Never allow widening outside province; pin province to scope
+    // Province officer can only operate within their province.
+    if (provinceId && Number(provinceId) !== Number(scope.provinceId)) {
+      throw createHttpError(403, "Forbidden (province scope)", "FORBIDDEN");
+    }
     return { provinceId: scope.provinceId, districtId, stationId };
   }
 
   if (role === "DISTRICT_OFFICER") {
-    // Pin to district (strongest guarantee): never allow province-wide view
-    return { provinceId: scope.provinceId, districtId: scope.districtId, stationId: null };
+    // District officer must never widen beyond their district.
+    if (provinceId && Number(provinceId) !== Number(scope.provinceId)) {
+      throw createHttpError(403, "Forbidden (province scope)", "FORBIDDEN");
+    }
+    if (districtId && Number(districtId) !== Number(scope.districtId)) {
+      throw createHttpError(403, "Forbidden (district scope)", "FORBIDDEN");
+    }
+    // Allow optional narrowing by stationId (validated later), but always pin district.
+    return { provinceId: scope.provinceId, districtId: scope.districtId, stationId };
   }
 
   if (role === "STATION_OFFICER") {
     // Pin to station: never allow district/province-wide view
+    if (provinceId && Number(provinceId) !== Number(scope.provinceId)) {
+      throw createHttpError(403, "Forbidden (province scope)", "FORBIDDEN");
+    }
+    if (districtId && Number(districtId) !== Number(scope.districtId)) {
+      throw createHttpError(403, "Forbidden (district scope)", "FORBIDDEN");
+    }
+    if (stationId && Number(stationId) !== Number(scope.stationId)) {
+      throw createHttpError(403, "Forbidden (station scope)", "FORBIDDEN");
+    }
     return {
       provinceId: scope.provinceId,
       districtId: scope.districtId,
@@ -88,9 +156,17 @@ export async function getLiveView({ query, user }) {
     districtId: query.districtId ?? null,
     stationId: query.stationId ?? null
   };
+  // Strict mode: explicit out-of-scope filters must be rejected (403), not silently pinned.
+  assertRequestedScopeWithinUserScope({ user, requested });
   const { provinceId, districtId, stationId } = withEffectiveScope({ user, ...requested });
 
   enforceScopeSync({ user, provinceId, districtId, stationId });
+
+  if (user.role === "DISTRICT_OFFICER" && stationId) {
+    if (!(await stationBelongsToDistrict(stationId, user.scope.districtId))) {
+      throw createHttpError(403, "Forbidden (station not in district)", "FORBIDDEN");
+    }
+  }
 
   if (
     user.role === "PROVINCIAL_OFFICER" &&
@@ -163,9 +239,17 @@ export async function getHistory({ query, user }) {
     districtId: query.districtId ?? null,
     stationId: query.stationId ?? null
   };
+  // Strict mode: explicit out-of-scope filters must be rejected (403), not silently pinned.
+  assertRequestedScopeWithinUserScope({ user, requested });
   const { provinceId, districtId, stationId } = withEffectiveScope({ user, ...requested });
 
   enforceScopeSync({ user, provinceId, districtId, stationId });
+
+  if (user.role === "DISTRICT_OFFICER" && stationId) {
+    if (!(await stationBelongsToDistrict(stationId, user.scope.districtId))) {
+      throw createHttpError(403, "Forbidden (station not in district)", "FORBIDDEN");
+    }
+  }
 
   if (
     user.role === "PROVINCIAL_OFFICER" &&
@@ -249,9 +333,17 @@ export async function getLiveSearch({ query, user }) {
     districtId: query.districtId ?? null,
     stationId: query.stationId ?? null
   };
+  // Strict mode: explicit out-of-scope filters must be rejected (403), not silently pinned.
+  assertRequestedScopeWithinUserScope({ user, requested });
   const { provinceId, districtId, stationId } = withEffectiveScope({ user, ...requested });
 
   enforceScopeSync({ user, provinceId, districtId, stationId });
+
+  if (user.role === "DISTRICT_OFFICER" && stationId) {
+    if (!(await stationBelongsToDistrict(stationId, user.scope.districtId))) {
+      throw createHttpError(403, "Forbidden (station not in district)", "FORBIDDEN");
+    }
+  }
 
   if (
     user.role === "PROVINCIAL_OFFICER" &&
