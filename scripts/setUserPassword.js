@@ -23,7 +23,7 @@ if (!email || !password) {
   try {
     const hash = await bcrypt.hash(password, 10);
     const r = await pool.query(
-      "update users set password_hash = $1 where lower(email) = lower($2) returning user_id, email, role",
+      "update users set password_hash = $1, password_changed_at = current_timestamp, token_version = token_version + 1 where lower(email) = lower($2) returning user_id, email, role",
       [hash, email]
     );
     if (!r.rowCount) {

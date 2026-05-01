@@ -23,11 +23,19 @@ copy .env.example .env
 - `DATABASE_URL`
 - `JWT_SECRET`
 - `PORT` (optional)
+- `JWT_ISSUER` (recommended)
+- `JWT_AUDIENCE` (recommended)
 
 4. Apply DB schema + seed data
 
 ```bash
 npm run db:apply
+```
+
+If upgrading an existing DB, run:
+
+```bash
+npm run db:migrate-security
 ```
 
 5. Run the API
@@ -38,8 +46,10 @@ npm run dev
 
 ## Docs
 
-- Swagger UI: `/api/docs/`
-- OpenAPI JSON: `/api/openapi.json`
+- Swagger UI: `/api/docs/` (disabled by default in production; HQ_ADMIN-only if enabled)
+- OpenAPI JSON: `/api/openapi.json` (disabled by default in production; HQ_ADMIN-only if enabled)
+
+Control with `ENABLE_API_DOCS`.
 
 ## Scripts
 
@@ -55,6 +65,11 @@ npm run dev
 
 1. `POST /api/auth/login`
 2. Use `Authorization: Bearer <token>` on protected routes
+
+JWT hardening env vars:
+
+- `JWT_ISSUER`, `JWT_AUDIENCE`, `JWT_ALG`
+- `JWT_EXPIRES_IN` (default `1h`)
 
 ### Device client (API key)
 
