@@ -11,6 +11,7 @@
     "db:device-keys": "node scripts/ensureDeviceApiKey.js",
     "db:set-password": "node scripts/setUserPassword.js",
     "db:migrate-station": "node scripts/migrateAddStationToTukTuks.js",
+    "db:migrate-security": "node scripts/migrateSecurityUsersTokenVersion.js",
     "db:create-district-officer": "node scripts/createDistrictOfficerDemo.js",
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",

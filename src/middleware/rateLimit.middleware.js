@@ -22,6 +22,13 @@ export function createRateLimiters() {
     legacyHeaders: false
   });
 
-  return { global, auth, device };
+  const tracking = rateLimit({
+    windowMs: 60 * 1000,
+    limit: 60,
+    standardHeaders: true,
+    legacyHeaders: false
+  });
+
+  return { global, auth, device, tracking };
 }
 

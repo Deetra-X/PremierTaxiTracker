@@ -1,4 +1,5 @@
 import { pool } from "../../config/db.js";
+import { getEnv } from "../../config/env.js";
 import { createHttpError } from "../../middleware/error.middleware.js";
 
 async function districtBelongsToProvince(districtId, provinceId) {
@@ -7,6 +8,37 @@ async function districtBelongsToProvince(districtId, provinceId) {
     [districtId, provinceId]
   );
   return Boolean(r.rowCount);
+}
+
+function withEffectiveScope({ user, provinceId, districtId, stationId }) {
+  const role = user?.role;
+  const scope = user?.scope;
+  if (!role || !scope) throw createHttpError(401, "Unauthorized", "UNAUTHORIZED");
+
+  if (role === "HQ_ADMIN") {
+    return { provinceId, districtId, stationId };
+  }
+
+  if (role === "PROVINCIAL_OFFICER") {
+    // Never allow widening outside province; pin province to scope
+    return { provinceId: scope.provinceId, districtId, stationId };
+  }
+
+  if (role === "DISTRICT_OFFICER") {
+    // Pin to district (strongest guarantee): never allow province-wide view
+    return { provinceId: scope.provinceId, districtId: scope.districtId, stationId: null };
+  }
+
+  if (role === "STATION_OFFICER") {
+    // Pin to station: never allow district/province-wide view
+    return {
+      provinceId: scope.provinceId,
+      districtId: scope.districtId,
+      stationId: scope.stationId
+    };
+  }
+
+  throw createHttpError(403, "Forbidden", "FORBIDDEN");
 }
 
 function enforceScopeSync({ user, provinceId, districtId, stationId }) {
@@ -51,9 +83,12 @@ function enforceScopeSync({ user, provinceId, districtId, stationId }) {
 
 export async function getLiveView({ query, user }) {
   // join to districts/provinces using tuk_tuks
-  const provinceId = query.provinceId ?? null;
-  const districtId = query.districtId ?? null;
-  const stationId = query.stationId ?? null;
+  const requested = {
+    provinceId: query.provinceId ?? null,
+    districtId: query.districtId ?? null,
+    stationId: query.stationId ?? null
+  };
+  const { provinceId, districtId, stationId } = withEffectiveScope({ user, ...requested });
 
   enforceScopeSync({ user, provinceId, districtId, stationId });
 
@@ -94,6 +129,12 @@ export async function getLiveView({ query, user }) {
 
   const whereSql = where.length ? `where ${where.join(" and ")}` : "";
 
+  const precisionRaw = getEnv("LOCATION_PRECISION_DECIMALS", { defaultValue: "5" });
+  const precision = Math.max(0, Math.min(8, Number.parseInt(precisionRaw, 10)));
+  if (!Number.isInteger(precision)) {
+    throw createHttpError(500, "Invalid LOCATION_PRECISION_DECIMALS", "INTERNAL_ERROR");
+  }
+
   const sql = `
     select distinct on (ll.tuk_tuk_id)
       ll.tuk_tuk_id,
@@ -101,8 +142,8 @@ export async function getLiveView({ query, user }) {
       t.province_id,
       t.district_id,
       t.station_id,
-      ll.latitude,
-      ll.longitude,
+      round(ll.latitude::numeric, ${precision}) as latitude,
+      round(ll.longitude::numeric, ${precision}) as longitude,
       ll.speed_kmh,
       ll.recorded_at
     from location_logs ll
@@ -117,9 +158,12 @@ export async function getLiveView({ query, user }) {
 }
 
 export async function getHistory({ query, user }) {
-  const provinceId = query.provinceId ?? null;
-  const districtId = query.districtId ?? null;
-  const stationId = query.stationId ?? null;
+  const requested = {
+    provinceId: query.provinceId ?? null,
+    districtId: query.districtId ?? null,
+    stationId: query.stationId ?? null
+  };
+  const { provinceId, districtId, stationId } = withEffectiveScope({ user, ...requested });
 
   enforceScopeSync({ user, provinceId, districtId, stationId });
 
@@ -200,9 +244,12 @@ export async function getLiveSearch({ query, user }) {
   const q = String(query.q ?? "").trim();
   if (!q) throw createHttpError(400, "Invalid query", "VALIDATION_ERROR");
 
-  const provinceId = query.provinceId ?? null;
-  const districtId = query.districtId ?? null;
-  const stationId = query.stationId ?? null;
+  const requested = {
+    provinceId: query.provinceId ?? null,
+    districtId: query.districtId ?? null,
+    stationId: query.stationId ?? null
+  };
+  const { provinceId, districtId, stationId } = withEffectiveScope({ user, ...requested });
 
   enforceScopeSync({ user, provinceId, districtId, stationId });
 
@@ -217,11 +264,19 @@ export async function getLiveSearch({ query, user }) {
   const where = [];
   const params = [];
 
-  // Search targets: registration plate, driver NIC, driver name
+  const allowNicSearch =
+    user.role === "HQ_ADMIN" &&
+    getEnv("ENABLE_NIC_SEARCH", { defaultValue: "false" }).toLowerCase() === "true";
+
+  // Search targets (max-sec defaults): registration plate, driver name (NIC only if enabled for HQ)
   params.push(`%${q}%`);
-  where.push(
-    `(t.registration_number ilike $${params.length} or d.nic_number ilike $${params.length} or d.full_name ilike $${params.length})`
-  );
+  if (allowNicSearch) {
+    where.push(
+      `(t.registration_number ilike $${params.length} or d.nic_number ilike $${params.length} or d.full_name ilike $${params.length})`
+    );
+  } else {
+    where.push(`(t.registration_number ilike $${params.length} or d.full_name ilike $${params.length})`);
+  }
 
   if (provinceId) {
     params.push(provinceId);
@@ -250,18 +305,28 @@ export async function getLiveSearch({ query, user }) {
 
   const whereSql = where.length ? `where ${where.join(" and ")}` : "";
 
+  const precisionRaw = getEnv("LOCATION_PRECISION_DECIMALS", { defaultValue: "5" });
+  const precision = Math.max(0, Math.min(8, Number.parseInt(precisionRaw, 10)));
+  if (!Number.isInteger(precision)) {
+    throw createHttpError(500, "Invalid LOCATION_PRECISION_DECIMALS", "INTERNAL_ERROR");
+  }
+
+  const includeNicInResponse =
+    user.role === "HQ_ADMIN" &&
+    getEnv("INCLUDE_DRIVER_NIC_IN_RESPONSE", { defaultValue: "false" }).toLowerCase() === "true";
+
   const sql = `
     select distinct on (t.tuk_tuk_id)
       t.tuk_tuk_id,
       t.registration_number,
       d.driver_id,
       d.full_name as driver_name,
-      d.nic_number as driver_nic_number,
+      ${includeNicInResponse ? "d.nic_number" : "null"} as driver_nic_number,
       t.province_id,
       t.district_id,
       t.station_id,
-      ll.latitude,
-      ll.longitude,
+      round(ll.latitude::numeric, ${precision}) as latitude,
+      round(ll.longitude::numeric, ${precision}) as longitude,
       ll.speed_kmh,
       ll.recorded_at
     from tuk_tuks t

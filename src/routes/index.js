@@ -9,7 +9,7 @@ export function routes(limits) {
   const router = Router();
 
   router.use("/auth", limits.auth, authRoutes());
-  router.use("/tracking", trackingRoutes());
+  router.use("/tracking", limits.tracking, trackingRoutes());
   router.use("/device", limits.device, deviceRoutes());
   router.use("/admin", adminRoutes());
 

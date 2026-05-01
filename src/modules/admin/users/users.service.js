@@ -72,8 +72,8 @@ export async function createUser({ user, input }) {
   const hash = await bcrypt.hash(input.password, 10);
 
   const r = await pool.query(
-    `insert into users (station_id, full_name, email, password_hash, role, is_active)
-     values ($1, $2, $3, $4, $5, true)
+    `insert into users (station_id, full_name, email, password_hash, role, is_active, token_version, password_changed_at)
+     values ($1, $2, $3, $4, $5, true, 0, current_timestamp)
      returning user_id, station_id, full_name, email, role, is_active, created_at`,
     [input.stationId ?? null, input.fullName, input.email.toLowerCase(), hash, input.role]
   );
@@ -125,7 +125,7 @@ export async function updateUser({ user, userId, input }) {
 
   const r = await pool.query(
     `update users
-     set station_id = $1, full_name = $2, role = $3, is_active = $4
+     set station_id = $1, full_name = $2, role = $3, is_active = $4, token_version = token_version + 1
      where user_id = $5
      returning user_id, station_id, full_name, email, role, is_active, created_at`,
     [next.stationId ?? null, next.fullName, next.role, next.isActive, userId]
@@ -139,7 +139,9 @@ export async function resetUserPassword({ user, userId, password }) {
   }
   const hash = await bcrypt.hash(password, 10);
   const r = await pool.query(
-    `update users set password_hash = $1 where user_id = $2
+    `update users
+     set password_hash = $1, password_changed_at = current_timestamp, token_version = token_version + 1
+     where user_id = $2
      returning user_id, email`,
     [hash, userId]
   );
