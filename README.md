@@ -51,6 +51,11 @@ npm run dev
 
 Control with `ENABLE_API_DOCS`.
 
+For coursework/demo, you can make docs public in production:
+
+- Set `ENABLE_API_DOCS=true`
+- Set `PUBLIC_API_DOCS=true`
+
 ## Scripts
 
 - `npm run db:check`: DB connection smoke test

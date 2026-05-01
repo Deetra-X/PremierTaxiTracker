@@ -41,16 +41,29 @@ export function createApp() {
     "true";
   if (enableDocs) {
     const openapi = buildOpenApiSpec();
-    // In production, require HQ admin for docs
+    const publicDocs =
+      getEnv("PUBLIC_API_DOCS", { defaultValue: "false" }).toLowerCase() === "true";
+
+    // In production, default is HQ-only unless explicitly made public (CW/demo)
     if (nodeEnv === "production") {
-      app.get("/api/openapi.json", requireJwt, requireRoles("HQ_ADMIN"), (_req, res) => res.json(openapi));
-      app.use(
-        "/api/docs",
-        requireJwt,
-        requireRoles("HQ_ADMIN"),
-        swaggerUi.serve,
-        swaggerUi.setup(openapi, { explorer: true })
-      );
+      if (publicDocs) {
+        app.get("/api/openapi.json", (_req, res) => res.json(openapi));
+        app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openapi, { explorer: true }));
+      } else {
+        app.get(
+          "/api/openapi.json",
+          requireJwt,
+          requireRoles("HQ_ADMIN"),
+          (_req, res) => res.json(openapi)
+        );
+        app.use(
+          "/api/docs",
+          requireJwt,
+          requireRoles("HQ_ADMIN"),
+          swaggerUi.serve,
+          swaggerUi.setup(openapi, { explorer: true })
+        );
+      }
     } else {
       app.get("/api/openapi.json", (_req, res) => res.json(openapi));
       app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openapi, { explorer: true }));
