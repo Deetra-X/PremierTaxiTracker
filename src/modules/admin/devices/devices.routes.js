@@ -1,5 +1,6 @@
 import { Router } from "express";
 
+import { requireRoles } from "../../../middleware/rbac.middleware.js";
 import {
   createDeviceController,
   listDevicesController,
@@ -9,6 +10,7 @@ import {
 
 export function devicesAdminRoutes() {
   const r = Router();
+  r.use(requireRoles("HQ_ADMIN"));
   r.get("/", listDevicesController);
   r.post("/", createDeviceController);
   r.patch("/:deviceId", updateDeviceController);
