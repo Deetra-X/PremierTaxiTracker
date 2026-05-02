@@ -1,9 +1,17 @@
 import rateLimit from "express-rate-limit";
 
+function parsePositiveInt(raw, fallback) {
+  if (raw === undefined || raw === "") return fallback;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
+}
+
 export function createRateLimiters() {
+  const globalLimit = parsePositiveInt(process.env.TEST_GLOBAL_RATE_LIMIT, 300);
+
   const global = rateLimit({
     windowMs: 60 * 1000,
-    limit: 300,
+    limit: globalLimit,
     standardHeaders: true,
     legacyHeaders: false
   });

@@ -56,8 +56,18 @@ For coursework/demo, you can make docs public in production:
 - Set `ENABLE_API_DOCS=true`
 - Set `PUBLIC_API_DOCS=true`
 
+## Coursework alignment (REST + architecture — summary)
+
+- **Resource-oriented URLs** with JSON and appropriate verbs (`GET`/`POST`/`PATCH`), modular Express layers (routes → controllers → services), OpenAPI/Swagger.
+- **Filtering**: tracking history/live and admin lists already support scope-aware filters via query params.
+- **Sorting**: whitelist-based query params `sortBy` + `sortOrder` on `GET /api/admin/provinces`, `GET /api/admin/tuk-tuks`, and `GET /api/tracking/history` (and by-id history), implemented as parameterized SQL `ORDER BY` (no raw user strings in SQL).
+- **Conditional GET**: weak **ETag** + **`Cache-Control`** + **`Vary: Authorization`** on selected JSON responses; clients send **`If-None-Match`** to receive **304 Not Modified** when nothing changed (same for **`GET /health`** with public cache semantics).
+- **Security / robustness**: JWT + RBAC, rate limits, Helmet, env-based config, device API key for ingestion, automated smoke tests (`npm run test`).
+
 ## Scripts
 
+- `npm run test`: smoke tests (conditional `GET /health` → 304 with `If-None-Match`; JWT 401; global rate limit → 429). Uses `TEST_GLOBAL_RATE_LIMIT` in the test file only.
+- `npm run lint`: ESLint
 - `npm run db:check`: DB connection smoke test
 - `npm run db:apply`: apply schema file to DB (set `RESET_DB=1` to include DROP statements)
 - `npm run db:tables`: list public tables

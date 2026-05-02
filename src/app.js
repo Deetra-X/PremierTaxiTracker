@@ -11,6 +11,7 @@ import { requireJwt } from "./middleware/jwt.middleware.js";
 import { requireRoles } from "./middleware/rbac.middleware.js";
 import { routes } from "./routes/index.js";
 import { buildOpenApiSpec } from "./openapi/openapi.js";
+import { sendJsonConditional } from "./utils/httpConditionalJson.js";
 
 export function createApp() {
   const app = express();
@@ -34,7 +35,12 @@ export function createApp() {
   const limits = createRateLimiters();
   app.use(limits.global);
 
-  app.get("/health", (req, res) => res.json({ ok: true }));
+  app.get("/health", (req, res) =>
+    sendJsonConditional(req, res, { ok: true }, {
+      vary: [],
+      cacheControl: "public, max-age=0, must-revalidate"
+    })
+  );
 
   const enableDocs =
     getEnv("ENABLE_API_DOCS", { defaultValue: nodeEnv === "production" ? "false" : "true" }) ===

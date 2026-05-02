@@ -1,7 +1,16 @@
 import { z } from "zod";
 
 import { createHttpError } from "../../../middleware/error.middleware.js";
+import { sendJsonConditional } from "../../../utils/httpConditionalJson.js";
 import { createTukTuk, listTukTuks, updateTukTuk } from "./tukTuks.service.js";
+
+const ListTukTuksQuerySchema = z.object({
+  sortBy: z
+    .enum(["tukTukId", "registrationNumber", "registeredAt", "provinceId", "districtId"])
+    .optional()
+    .default("tukTukId"),
+  sortOrder: z.enum(["asc", "desc"]).optional().default("asc")
+});
 
 const TukTukCreateSchema = z.object({
   driverId: z.number().int().positive(),
@@ -28,8 +37,10 @@ const TukTukUpdateSchema = z.object({
 
 export async function listTukTuksController(req, res, next) {
   try {
-    const data = await listTukTuks({ user: req.user });
-    res.json({ ok: true, data });
+    const parsed = ListTukTuksQuerySchema.safeParse(req.query);
+    if (!parsed.success) throw createHttpError(400, "Invalid query", "VALIDATION_ERROR");
+    const data = await listTukTuks({ user: req.user, ...parsed.data });
+    sendJsonConditional(req, res, { ok: true, data }, { vary: ["Authorization"] });
   } catch (err) {
     next(err);
   }

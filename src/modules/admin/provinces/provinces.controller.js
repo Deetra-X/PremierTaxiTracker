@@ -1,7 +1,13 @@
 import { z } from "zod";
 
 import { createHttpError } from "../../../middleware/error.middleware.js";
+import { sendJsonConditional } from "../../../utils/httpConditionalJson.js";
 import { createProvince, listProvinces, updateProvince } from "./provinces.service.js";
+
+const ListProvincesQuerySchema = z.object({
+  sortBy: z.enum(["provinceId", "name", "createdAt"]).optional().default("provinceId"),
+  sortOrder: z.enum(["asc", "desc"]).optional().default("asc")
+});
 
 const ProvinceCreateSchema = z.object({
   name: z.string().min(1).max(100)
@@ -13,8 +19,10 @@ const ProvinceUpdateSchema = z.object({
 
 export async function listProvincesController(req, res, next) {
   try {
-    const data = await listProvinces({ user: req.user });
-    res.json({ ok: true, data });
+    const parsed = ListProvincesQuerySchema.safeParse(req.query);
+    if (!parsed.success) throw createHttpError(400, "Invalid query", "VALIDATION_ERROR");
+    const data = await listProvinces(parsed.data);
+    sendJsonConditional(req, res, { ok: true, data }, { vary: ["Authorization"] });
   } catch (err) {
     next(err);
   }

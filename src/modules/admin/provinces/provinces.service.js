@@ -1,10 +1,16 @@
 import { pool } from "../../../config/db.js";
 import { createHttpError } from "../../../middleware/error.middleware.js";
+import { buildOrderBySql } from "../../../utils/sqlOrderBy.js";
 
-export async function listProvinces() {
-  const r = await pool.query(
-    "select province_id, name, created_at from provinces order by province_id"
-  );
+const LIST_ORDER_MAP = {
+  provinceId: "province_id",
+  name: "name",
+  createdAt: "created_at"
+};
+
+export async function listProvinces({ sortBy, sortOrder }) {
+  const orderSql = buildOrderBySql(sortBy, sortOrder, LIST_ORDER_MAP);
+  const r = await pool.query(`select province_id, name, created_at from provinces ${orderSql}`);
   return r.rows;
 }
 

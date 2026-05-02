@@ -1,6 +1,7 @@
 import { pool } from "../../config/db.js";
 import { getEnv } from "../../config/env.js";
 import { createHttpError } from "../../middleware/error.middleware.js";
+import { buildOrderBySql } from "../../utils/sqlOrderBy.js";
 
 async function districtBelongsToProvince(districtId, provinceId) {
   const r = await pool.query(
@@ -304,6 +305,13 @@ export async function getHistory({ query, user }) {
 
   const whereSql = where.length ? `where ${where.join(" and ")}` : "";
 
+  const HISTORY_ORDER_MAP = {
+    recordedAt: "ll.recorded_at",
+    logId: "ll.log_id",
+    tukTukId: "ll.tuk_tuk_id"
+  };
+  const orderSql = buildOrderBySql(query.sortBy, query.sortOrder, HISTORY_ORDER_MAP);
+
   const sql = `
     select
       ll.log_id,
@@ -316,7 +324,7 @@ export async function getHistory({ query, user }) {
     from location_logs ll
     left join tuk_tuks t on t.tuk_tuk_id = ll.tuk_tuk_id
     ${whereSql}
-    order by ll.recorded_at desc
+    ${orderSql}
     limit 5000
   `;
 

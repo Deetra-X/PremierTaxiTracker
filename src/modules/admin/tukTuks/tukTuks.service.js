@@ -5,8 +5,17 @@ import {
   assertProvinceAccess,
   assertStationInDistrict
 } from "../shared/scope.js";
+import { buildOrderBySql } from "../../../utils/sqlOrderBy.js";
 
-export async function listTukTuks({ user }) {
+const LIST_ORDER_MAP = {
+  tukTukId: "t.tuk_tuk_id",
+  registrationNumber: "t.registration_number",
+  registeredAt: "t.registered_at",
+  provinceId: "t.province_id",
+  districtId: "t.district_id"
+};
+
+export async function listTukTuks({ user, sortBy, sortOrder }) {
   const params = [];
   const where = [];
   if (user.role === "PROVINCIAL_OFFICER") {
@@ -14,6 +23,7 @@ export async function listTukTuks({ user }) {
     where.push(`t.province_id = $${params.length}`);
   }
   const whereSql = where.length ? `where ${where.join(" and ")}` : "";
+  const orderSql = buildOrderBySql(sortBy, sortOrder, LIST_ORDER_MAP);
 
   const r = await pool.query(
     `select
@@ -31,7 +41,7 @@ export async function listTukTuks({ user }) {
         t.registered_at
      from tuk_tuks t
      ${whereSql}
-     order by t.tuk_tuk_id`,
+     ${orderSql}`,
     params
   );
   return r.rows;

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { createHttpError } from "../../middleware/error.middleware.js";
+import { sendJsonConditional } from "../../utils/httpConditionalJson.js";
 import { getHistory, getLiveSearch, getLiveView } from "./tracking.service.js";
 
 const LiveSchema = z.object({
@@ -22,7 +23,9 @@ const HistorySchema = z.object({
   to: z.string().datetime().optional(),
   provinceId: z.coerce.number().int().positive().optional(),
   districtId: z.coerce.number().int().positive().optional(),
-  stationId: z.coerce.number().int().positive().optional()
+  stationId: z.coerce.number().int().positive().optional(),
+  sortBy: z.enum(["recordedAt", "logId", "tukTukId"]).optional().default("recordedAt"),
+  sortOrder: z.enum(["asc", "desc"]).optional().default("desc")
 });
 
 const HistoryParamsSchema = z.object({
@@ -56,7 +59,7 @@ export async function historyController(req, res, next) {
     const parsed = HistorySchema.safeParse(req.query);
     if (!parsed.success) throw createHttpError(400, "Invalid query", "VALIDATION_ERROR");
     const data = await getHistory({ query: parsed.data, user: req.user });
-    res.json({ ok: true, data });
+    sendJsonConditional(req, res, { ok: true, data }, { vary: ["Authorization"] });
   } catch (err) {
     next(err);
   }
@@ -69,7 +72,7 @@ export async function historyByIdController(req, res, next) {
     const parsed = HistorySchema.safeParse({ ...req.query, tukTukId: params.data.tukTukId });
     if (!parsed.success) throw createHttpError(400, "Invalid query", "VALIDATION_ERROR");
     const data = await getHistory({ query: parsed.data, user: req.user });
-    res.json({ ok: true, data });
+    sendJsonConditional(req, res, { ok: true, data }, { vary: ["Authorization"] });
   } catch (err) {
     next(err);
   }

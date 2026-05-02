@@ -99,9 +99,22 @@ export function buildOpenApiSpec() {
         get: {
           tags: ["Health"],
           summary: "Health check",
+          parameters: [
+            {
+              name: "If-None-Match",
+              in: "header",
+              required: false,
+              description: "Weak ETag from a previous GET; returns 304 when unchanged.",
+              schema: { type: "string" }
+            }
+          ],
           responses: {
             200: {
               description: "OK",
+              headers: {
+                ETag: { schema: { type: "string" } },
+                "Cache-Control": { schema: { type: "string" } }
+              },
               content: {
                 "application/json": {
                   schema: {
@@ -111,6 +124,13 @@ export function buildOpenApiSpec() {
                     properties: { ok: { type: "boolean", example: true } }
                   }
                 }
+              }
+            },
+            304: {
+              description: "Not Modified — body empty; reuse cached JSON from prior 200.",
+              headers: {
+                ETag: { schema: { type: "string" } },
+                "Cache-Control": { schema: { type: "string" } }
               }
             }
           }
@@ -221,10 +241,45 @@ export function buildOpenApiSpec() {
             { name: "to", in: "query", required: false, schema: { type: "string", format: "date-time" } },
             { name: "provinceId", in: "query", required: false, schema: { type: "integer", minimum: 1 } },
             { name: "districtId", in: "query", required: false, schema: { type: "integer", minimum: 1 } },
-            { name: "stationId", in: "query", required: false, schema: { type: "integer", minimum: 1 } }
+            { name: "stationId", in: "query", required: false, schema: { type: "integer", minimum: 1 } },
+            {
+              name: "sortBy",
+              in: "query",
+              required: false,
+              schema: { type: "string", enum: ["recordedAt", "logId", "tukTukId"], default: "recordedAt" }
+            },
+            {
+              name: "sortOrder",
+              in: "query",
+              required: false,
+              schema: { type: "string", enum: ["asc", "desc"], default: "desc" }
+            },
+            {
+              name: "If-None-Match",
+              in: "header",
+              required: false,
+              description: "Weak ETag from a prior identical GET (same URL + authorization scope).",
+              schema: { type: "string" }
+            }
           ],
           responses: {
-            200: { description: "OK", content: { "application/json": { schema: ApiOk({}) } } },
+            200: {
+              description: "OK",
+              headers: {
+                ETag: { schema: { type: "string" } },
+                "Cache-Control": { schema: { type: "string" } },
+                Vary: { schema: { type: "string", example: "Authorization" } }
+              },
+              content: { "application/json": { schema: ApiOk({}) } }
+            },
+            304: {
+              description: "Not Modified",
+              headers: {
+                ETag: { schema: { type: "string" } },
+                "Cache-Control": { schema: { type: "string" } },
+                Vary: { schema: { type: "string" } }
+              }
+            },
             400: {
               description: "Validation error",
               content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } }
@@ -247,10 +302,36 @@ export function buildOpenApiSpec() {
             { name: "to", in: "query", required: false, schema: { type: "string", format: "date-time" } },
             { name: "provinceId", in: "query", required: false, schema: { type: "integer", minimum: 1 } },
             { name: "districtId", in: "query", required: false, schema: { type: "integer", minimum: 1 } },
-            { name: "stationId", in: "query", required: false, schema: { type: "integer", minimum: 1 } }
+            { name: "stationId", in: "query", required: false, schema: { type: "integer", minimum: 1 } },
+            {
+              name: "sortBy",
+              in: "query",
+              required: false,
+              schema: { type: "string", enum: ["recordedAt", "logId", "tukTukId"], default: "recordedAt" }
+            },
+            {
+              name: "sortOrder",
+              in: "query",
+              required: false,
+              schema: { type: "string", enum: ["asc", "desc"], default: "desc" }
+            },
+            {
+              name: "If-None-Match",
+              in: "header",
+              required: false,
+              schema: { type: "string" }
+            }
           ],
           responses: {
-            200: { description: "OK", content: { "application/json": { schema: ApiOk({}) } } },
+            200: {
+              description: "OK",
+              headers: {
+                ETag: { schema: { type: "string" } },
+                Vary: { schema: { type: "string" } }
+              },
+              content: { "application/json": { schema: ApiOk({}) } }
+            },
+            304: { description: "Not Modified", headers: { ETag: { schema: { type: "string" } } } },
             400: {
               description: "Validation error",
               content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } }
@@ -296,7 +377,37 @@ export function buildOpenApiSpec() {
           tags: ["Admin"],
           summary: "List provinces",
           security: [{ bearerAuth: [] }],
-          responses: { 200: { description: "OK", content: { "application/json": { schema: ApiOk({}) } } } }
+          parameters: [
+            {
+              name: "sortBy",
+              in: "query",
+              required: false,
+              schema: { type: "string", enum: ["provinceId", "name", "createdAt"], default: "provinceId" }
+            },
+            {
+              name: "sortOrder",
+              in: "query",
+              required: false,
+              schema: { type: "string", enum: ["asc", "desc"], default: "asc" }
+            },
+            {
+              name: "If-None-Match",
+              in: "header",
+              required: false,
+              schema: { type: "string" }
+            }
+          ],
+          responses: {
+            200: {
+              description: "OK",
+              headers: {
+                ETag: { schema: { type: "string" } },
+                Vary: { schema: { type: "string" } }
+              },
+              content: { "application/json": { schema: ApiOk({}) } }
+            },
+            304: { description: "Not Modified", headers: { ETag: { schema: { type: "string" } } } }
+          }
         },
         post: {
           tags: ["Admin"],
@@ -443,7 +554,41 @@ export function buildOpenApiSpec() {
           tags: ["Admin"],
           summary: "List tuk-tuks",
           security: [{ bearerAuth: [] }],
-          responses: { 200: { description: "OK", content: { "application/json": { schema: ApiOk({}) } } } }
+          parameters: [
+            {
+              name: "sortBy",
+              in: "query",
+              required: false,
+              schema: {
+                type: "string",
+                enum: ["tukTukId", "registrationNumber", "registeredAt", "provinceId", "districtId"],
+                default: "tukTukId"
+              }
+            },
+            {
+              name: "sortOrder",
+              in: "query",
+              required: false,
+              schema: { type: "string", enum: ["asc", "desc"], default: "asc" }
+            },
+            {
+              name: "If-None-Match",
+              in: "header",
+              required: false,
+              schema: { type: "string" }
+            }
+          ],
+          responses: {
+            200: {
+              description: "OK",
+              headers: {
+                ETag: { schema: { type: "string" } },
+                Vary: { schema: { type: "string" } }
+              },
+              content: { "application/json": { schema: ApiOk({}) } }
+            },
+            304: { description: "Not Modified", headers: { ETag: { schema: { type: "string" } } } }
+          }
         },
         post: {
           tags: ["Admin"],
