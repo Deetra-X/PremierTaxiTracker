@@ -1,0 +1,154 @@
+{
+  "_comment": "Simulation data for the Tuk-Tuk Tracking API. Covers all core tables used by the system.",
+
+  "provinces": [
+    { "province_id": 1, "name": "Western Province" },
+    { "province_id": 2, "name": "Central Province" },
+    { "province_id": 3, "name": "Southern Province" }
+  ],
+
+  "districts": [
+    { "district_id": 1, "province_id": 1, "name": "Colombo" },
+    { "district_id": 2, "province_id": 1, "name": "Gampaha" },
+    { "district_id": 3, "province_id": 1, "name": "Kalutara" },
+    { "district_id": 4, "province_id": 2, "name": "Kandy" },
+    { "district_id": 5, "province_id": 2, "name": "Matale" },
+    { "district_id": 6, "province_id": 3, "name": "Galle" },
+    { "district_id": 7, "province_id": 3, "name": "Matara" }
+  ],
+
+  "police_stations": [
+    { "station_id": 1, "district_id": 1, "station_name": "Colombo Fort Police Station",    "address": "Chaittya Road, Colombo 01",         "contact_number": "+94112421111" },
+    { "station_id": 2, "district_id": 1, "station_name": "Wellawatte Police Station",       "address": "Galle Road, Colombo 06",            "contact_number": "+94112594444" },
+    { "station_id": 3, "district_id": 2, "station_name": "Negombo Police Station",          "address": "Main Street, Negombo",              "contact_number": "+94312222221" },
+    { "station_id": 4, "district_id": 3, "station_name": "Kalutara Police Station",         "address": "Galle Road, Kalutara",              "contact_number": "+94342222501" },
+    { "station_id": 5, "district_id": 4, "station_name": "Kandy Central Police Station",    "address": "Dalada Veediya, Kandy",             "contact_number": "+94812222229" },
+    { "station_id": 6, "district_id": 5, "station_name": "Matale Police Station",           "address": "High Street, Matale",               "contact_number": "+94662222221" },
+    { "station_id": 7, "district_id": 6, "station_name": "Galle Police Station",            "address": "Church Street, Galle",              "contact_number": "+94912222222" },
+    { "station_id": 8, "district_id": 7, "station_name": "Matara Police Station",           "address": "Main Road, Matara",                 "contact_number": "+94412222221" }
+  ],
+
+  "drivers": [
+    { "driver_id": 1, "full_name": "Suresh Perera",     "nic_number": "821456789V", "phone_number": "+94771234567", "address": "12 Baseline Rd, Colombo 09",       "license_number": "LK-CB-2005-00341" },
+    { "driver_id": 2, "full_name": "Nalaka Jayasinghe", "nic_number": "890234567V", "phone_number": "+94779876543", "address": "45 Ward Place, Colombo 07",        "license_number": "LK-CB-2010-00892" },
+    { "driver_id": 3, "full_name": "Chaminda Ranatunga","nic_number": "750987654V", "phone_number": "+94712345678", "address": "78 Negombo Rd, Wattala",            "license_number": "LK-GM-2003-00123" },
+    { "driver_id": 4, "full_name": "Priyantha Silva",   "nic_number": "800567234V", "phone_number": "+94723456789", "address": "33 Kalutara South",                 "license_number": "LK-KL-2008-00456" },
+    { "driver_id": 5, "full_name": "Ruwan Dissanayake", "nic_number": "920345678V", "phone_number": "+94754321098", "address": "21 Peradeniya Rd, Kandy",           "license_number": "LK-KD-2015-00789" },
+    { "driver_id": 6, "full_name": "Kasun Fernando",    "nic_number": "870123456V", "phone_number": "+94765432109", "address": "56 High Street, Matale",            "license_number": "LK-MT-2012-00321" },
+    { "driver_id": 7, "full_name": "Dinesh Wickrama",   "nic_number": "940789012V", "phone_number": "+94776543210", "address": "9 Light House St, Galle",           "license_number": "LK-GL-2018-00654" },
+    { "driver_id": 8, "full_name": "Thilina Bandara",   "nic_number": "780456123V", "phone_number": "+94781234567", "address": "67 Polhena Rd, Matara",             "license_number": "LK-MR-2006-00987" },
+    { "driver_id": 9, "full_name": "Ashan Ratnayake",   "nic_number": "960678901V", "phone_number": "+94792345678", "address": "14 Marine Drive, Colombo 03",      "license_number": "LK-CB-2020-01201" },
+    { "driver_id": 10,"full_name": "Lasith Madushanka", "nic_number": "850234123V", "phone_number": "+94703456789", "address": "29 Hendala Rd, Wattala",            "license_number": "LK-GM-2009-00765" }
+  ],
+
+  "gps_devices": [
+    { "device_id": 1, "imei_number": "359410081234561", "sim_number": "+94701100001", "status": "ACTIVE",      "installed_date": "2023-01-15" },
+    { "device_id": 2, "imei_number": "359410081234562", "sim_number": "+94701100002", "status": "ACTIVE",      "installed_date": "2023-02-10" },
+    { "device_id": 3, "imei_number": "359410081234563", "sim_number": "+94701100003", "status": "ACTIVE",      "installed_date": "2023-03-05" },
+    { "device_id": 4, "imei_number": "359410081234564", "sim_number": "+94701100004", "status": "ACTIVE",      "installed_date": "2023-04-20" },
+    { "device_id": 5, "imei_number": "359410081234565", "sim_number": "+94701100005", "status": "ACTIVE",      "installed_date": "2023-05-12" },
+    { "device_id": 6, "imei_number": "359410081234566", "sim_number": "+94701100006", "status": "ACTIVE",      "installed_date": "2023-06-01" },
+    { "device_id": 7, "imei_number": "359410081234567", "sim_number": "+94701100007", "status": "ACTIVE",      "installed_date": "2023-07-22" },
+    { "device_id": 8, "imei_number": "359410081234568", "sim_number": "+94701100008", "status": "ACTIVE",      "installed_date": "2023-08-14" },
+    { "device_id": 9, "imei_number": "359410081234569", "sim_number": "+94701100009", "status": "MAINTENANCE", "installed_date": "2023-09-30" },
+    { "device_id": 10,"imei_number": "359410081234570", "sim_number": "+94701100010", "status": "INACTIVE",    "installed_date": "2022-11-05" }
+  ],
+
+  "tuk_tuks": [
+    { "tuk_tuk_id": 1,  "driver_id": 1,  "device_id": 1,  "registration_number": "WP CAA-1234", "model": "Bajaj RE",        "color": "Yellow", "manufacture_year": 2019, "province_id": 1, "district_id": 1, "station_id": 1, "is_active": true,  "registered_at": "2023-01-15T09:00:00Z" },
+    { "tuk_tuk_id": 2,  "driver_id": 2,  "device_id": 2,  "registration_number": "WP CAB-5678", "model": "TVS King",        "color": "Green",  "manufacture_year": 2021, "province_id": 1, "district_id": 1, "station_id": 2, "is_active": true,  "registered_at": "2023-02-10T10:30:00Z" },
+    { "tuk_tuk_id": 3,  "driver_id": 3,  "device_id": 3,  "registration_number": "WP GAA-9012", "model": "Bajaj RE",        "color": "Blue",   "manufacture_year": 2020, "province_id": 1, "district_id": 2, "station_id": 3, "is_active": true,  "registered_at": "2023-03-05T08:15:00Z" },
+    { "tuk_tuk_id": 4,  "driver_id": 4,  "device_id": 4,  "registration_number": "WP KLA-3456", "model": "Piaggio Ape",     "color": "White",  "manufacture_year": 2018, "province_id": 1, "district_id": 3, "station_id": 4, "is_active": true,  "registered_at": "2023-04-20T11:00:00Z" },
+    { "tuk_tuk_id": 5,  "driver_id": 5,  "device_id": 5,  "registration_number": "CP KAA-7890", "model": "Bajaj RE",        "color": "Yellow", "manufacture_year": 2022, "province_id": 2, "district_id": 4, "station_id": 5, "is_active": true,  "registered_at": "2023-05-12T14:00:00Z" },
+    { "tuk_tuk_id": 6,  "driver_id": 6,  "device_id": 6,  "registration_number": "CP MTA-2345", "model": "TVS King",        "color": "Red",    "manufacture_year": 2020, "province_id": 2, "district_id": 5, "station_id": 6, "is_active": true,  "registered_at": "2023-06-01T09:45:00Z" },
+    { "tuk_tuk_id": 7,  "driver_id": 7,  "device_id": 7,  "registration_number": "SP GAL-6789", "model": "Bajaj RE",        "color": "Yellow", "manufacture_year": 2021, "province_id": 3, "district_id": 6, "station_id": 7, "is_active": true,  "registered_at": "2023-07-22T13:30:00Z" },
+    { "tuk_tuk_id": 8,  "driver_id": 8,  "device_id": 8,  "registration_number": "SP MRA-1011", "model": "Piaggio Ape",     "color": "Blue",   "manufacture_year": 2017, "province_id": 3, "district_id": 7, "station_id": 8, "is_active": true,  "registered_at": "2023-08-14T10:00:00Z" },
+    { "tuk_tuk_id": 9,  "driver_id": 9,  "device_id": 9,  "registration_number": "WP CAC-1213", "model": "TVS King",        "color": "Green",  "manufacture_year": 2023, "province_id": 1, "district_id": 1, "station_id": 1, "is_active": false, "registered_at": "2023-09-30T16:00:00Z" },
+    { "tuk_tuk_id": 10, "driver_id": 10, "device_id": 10, "registration_number": "WP GAB-1415", "model": "Bajaj RE",        "color": "White",  "manufacture_year": 2016, "province_id": 1, "district_id": 2, "station_id": 3, "is_active": false, "registered_at": "2022-11-05T08:00:00Z" }
+  ],
+
+  "users": [
+    { "user_id": 1, "station_id": null, "full_name": "Admin HQ",           "email": "admin@police.lk",              "role": "HQ_ADMIN",           "is_active": true  },
+    { "user_id": 2, "station_id": 1,    "full_name": "Provincial Officer W","email": "provincial.west@police.lk",   "role": "PROVINCIAL_OFFICER", "is_active": true  },
+    { "user_id": 3, "station_id": 1,    "full_name": "District Officer Col", "email": "district.col@police.lk",    "role": "DISTRICT_OFFICER",   "is_active": true  },
+    { "user_id": 4, "station_id": 1,    "full_name": "Officer Fort Station", "email": "station.fort@police.lk",    "role": "STATION_OFFICER",    "is_active": true  },
+    { "user_id": 5, "station_id": 2,    "full_name": "Officer Wellawatte",   "email": "station.watta@police.lk",   "role": "STATION_OFFICER",    "is_active": true  },
+    { "user_id": 6, "station_id": 5,    "full_name": "Provincial Officer C", "email": "provincial.central@police.lk","role": "PROVINCIAL_OFFICER","is_active": true  },
+    { "user_id": 7, "station_id": 5,    "full_name": "District Officer Kd",  "email": "district.kandy@police.lk", "role": "DISTRICT_OFFICER",   "is_active": true  }
+  ],
+
+  "location_logs": [
+    { "log_id": 1,  "tuk_tuk_id": 1, "latitude":  6.9319,  "longitude": 79.8478, "speed_kmh": 18.5, "recorded_at": "2026-05-02T04:00:00Z", "location_description": "Colombo Fort, near railway station" },
+    { "log_id": 2,  "tuk_tuk_id": 1, "latitude":  6.9301,  "longitude": 79.8466, "speed_kmh": 22.0, "recorded_at": "2026-05-02T04:05:00Z", "location_description": "Pettah Market area" },
+    { "log_id": 3,  "tuk_tuk_id": 1, "latitude":  6.9271,  "longitude": 79.8450, "speed_kmh": 15.3, "recorded_at": "2026-05-02T04:10:00Z", "location_description": "Manning Market junction" },
+    { "log_id": 4,  "tuk_tuk_id": 1, "latitude":  6.9250,  "longitude": 79.8435, "speed_kmh":  0.0, "recorded_at": "2026-05-02T04:15:00Z", "location_description": "Maradana bus stand (stopped)" },
+    { "log_id": 5,  "tuk_tuk_id": 2, "latitude":  6.8802,  "longitude": 79.8570, "speed_kmh": 30.1, "recorded_at": "2026-05-02T04:00:00Z", "location_description": "Wellawatte, Galle Rd northbound" },
+    { "log_id": 6,  "tuk_tuk_id": 2, "latitude":  6.8861,  "longitude": 79.8563, "speed_kmh": 27.4, "recorded_at": "2026-05-02T04:07:00Z", "location_description": "Dehiwela junction" },
+    { "log_id": 7,  "tuk_tuk_id": 2, "latitude":  6.8921,  "longitude": 79.8554, "speed_kmh": 12.0, "recorded_at": "2026-05-02T04:14:00Z", "location_description": "Kirulapone canal bridge" },
+    { "log_id": 8,  "tuk_tuk_id": 3, "latitude":  7.2083,  "longitude": 79.8358, "speed_kmh": 20.7, "recorded_at": "2026-05-02T04:00:00Z", "location_description": "Negombo bus stand" },
+    { "log_id": 9,  "tuk_tuk_id": 3, "latitude":  7.2100,  "longitude": 79.8390, "speed_kmh": 25.5, "recorded_at": "2026-05-02T04:08:00Z", "location_description": "Negombo beach road" },
+    { "log_id": 10, "tuk_tuk_id": 3, "latitude":  7.2115,  "longitude": 79.8430, "speed_kmh": 18.0, "recorded_at": "2026-05-02T04:16:00Z", "location_description": "Negombo fish market" },
+    { "log_id": 11, "tuk_tuk_id": 4, "latitude":  6.5854,  "longitude": 79.9607, "speed_kmh": 14.2, "recorded_at": "2026-05-02T04:00:00Z", "location_description": "Kalutara North town centre" },
+    { "log_id": 12, "tuk_tuk_id": 4, "latitude":  6.5825,  "longitude": 79.9598, "speed_kmh": 19.8, "recorded_at": "2026-05-02T04:09:00Z", "location_description": "Kalutara Bodhiya area" },
+    { "log_id": 13, "tuk_tuk_id": 5, "latitude":  7.2906,  "longitude": 80.6337, "speed_kmh": 10.0, "recorded_at": "2026-05-02T04:00:00Z", "location_description": "Kandy Dalada Maligawa vicinity" },
+    { "log_id": 14, "tuk_tuk_id": 5, "latitude":  7.2945,  "longitude": 80.6353, "speed_kmh": 22.3, "recorded_at": "2026-05-02T04:06:00Z", "location_description": "Kandy Clock Tower junction" },
+    { "log_id": 15, "tuk_tuk_id": 5, "latitude":  7.2970,  "longitude": 80.6367, "speed_kmh": 17.5, "recorded_at": "2026-05-02T04:12:00Z", "location_description": "Kandy market Rd" },
+    { "log_id": 16, "tuk_tuk_id": 5, "latitude":  7.2992,  "longitude": 80.6380, "speed_kmh":  0.0, "recorded_at": "2026-05-02T04:18:00Z", "location_description": "Kandy bus terminal (stopped)" },
+    { "log_id": 17, "tuk_tuk_id": 6, "latitude":  7.4701,  "longitude": 80.6226, "speed_kmh": 35.6, "recorded_at": "2026-05-02T04:00:00Z", "location_description": "Matale town, A9 highway" },
+    { "log_id": 18, "tuk_tuk_id": 6, "latitude":  7.4730,  "longitude": 80.6241, "speed_kmh": 28.2, "recorded_at": "2026-05-02T04:10:00Z", "location_description": "Matale market Rd" },
+    { "log_id": 19, "tuk_tuk_id": 7, "latitude":  6.0535,  "longitude": 80.2210, "speed_kmh": 12.5, "recorded_at": "2026-05-02T04:00:00Z", "location_description": "Galle Fort Gate area" },
+    { "log_id": 20, "tuk_tuk_id": 7, "latitude":  6.0545,  "longitude": 80.2200, "speed_kmh": 18.8, "recorded_at": "2026-05-02T04:08:00Z", "location_description": "Galle clock tower" },
+    { "log_id": 21, "tuk_tuk_id": 7, "latitude":  6.0560,  "longitude": 80.2192, "speed_kmh": 21.0, "recorded_at": "2026-05-02T04:16:00Z", "location_description": "Galle Esplanade Rd" },
+    { "log_id": 22, "tuk_tuk_id": 8, "latitude":  5.9549,  "longitude": 80.5550, "speed_kmh": 20.0, "recorded_at": "2026-05-02T04:00:00Z", "location_description": "Matara bus stand" },
+    { "log_id": 23, "tuk_tuk_id": 8, "latitude":  5.9568,  "longitude": 80.5562, "speed_kmh": 15.7, "recorded_at": "2026-05-02T04:08:00Z", "location_description": "Matara Polhena beach junction" },
+    { "log_id": 24, "tuk_tuk_id": 1, "latitude":  6.9268,  "longitude": 79.8602, "speed_kmh": 23.1, "recorded_at": "2026-05-02T04:35:00Z", "location_description": "Union Place, Colombo 02" },
+    { "log_id": 25, "tuk_tuk_id": 1, "latitude":  6.9218,  "longitude": 79.8641, "speed_kmh":  8.4, "recorded_at": "2026-05-02T04:43:00Z", "location_description": "Slave Island, Colombo 02" },
+    { "log_id": 26, "tuk_tuk_id": 2, "latitude":  6.8980,  "longitude": 79.8545, "speed_kmh": 10.2, "recorded_at": "2026-05-02T04:30:00Z", "location_description": "Narahenpita junction" },
+    { "log_id": 27, "tuk_tuk_id": 5, "latitude":  7.3010,  "longitude": 80.6393, "speed_kmh": 14.0, "recorded_at": "2026-05-02T04:40:00Z", "location_description": "Kandy Goods Shed Rd" },
+    { "log_id": 28, "tuk_tuk_id": 7, "latitude":  6.0575,  "longitude": 80.2183, "speed_kmh":  0.0, "recorded_at": "2026-05-02T04:30:00Z", "location_description": "Galle Karapitiya junction (stopped)" },
+    { "log_id": 29, "tuk_tuk_id": 3, "latitude":  7.2132,  "longitude": 79.8465, "speed_kmh": 16.3, "recorded_at": "2026-05-02T04:28:00Z", "location_description": "Negombo St Mary's church area" },
+    { "log_id": 30, "tuk_tuk_id": 4, "latitude":  6.5800,  "longitude": 79.9588, "speed_kmh":  5.0, "recorded_at": "2026-05-02T04:25:00Z", "location_description": "Kalutara South near police station" }
+  ],
+
+  "sample_api_requests": {
+    "_comment": "Example JSON bodies for demonstrating API calls during system demo",
+
+    "POST /api/auth/login": {
+      "email": "admin@police.lk",
+      "password": "Admin@1234!"
+    },
+
+    "POST /api/device/pings (device 1 for tuk-tuk 1)": {
+      "tukTukId": 1,
+      "latitude": 6.9350,
+      "longitude": 79.8495,
+      "speedKmh": 24.5,
+      "recordedAt": "2026-05-02T10:15:00Z",
+      "locationDescription": "Colombo Fort, York Street"
+    },
+
+    "POST /api/admin/tuk-tuks": {
+      "driverId": 5,
+      "deviceId": 5,
+      "registrationNumber": "CP KAB-0101",
+      "model": "Bajaj RE",
+      "color": "Yellow",
+      "manufactureYear": 2024,
+      "provinceId": 2,
+      "districtId": 4,
+      "stationId": 5
+    },
+
+    "POST /api/admin/users": {
+      "stationId": 7,
+      "fullName": "Galle Station Officer",
+      "email": "station.galle@police.lk",
+      "password": "Galle@Secure99!",
+      "role": "STATION_OFFICER"
+    },
+
+    "PATCH /api/admin/devices/9 (activate device from MAINTENANCE)": {
+      "status": "ACTIVE"
+    }
+  }
+}
