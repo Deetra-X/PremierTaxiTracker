@@ -294,31 +294,68 @@ export function buildOpenApiSpec() {
       "/api/tracking/history/{tukTukId}": {
         get: {
           tags: ["Tracking"],
-          summary: "History (movement logs) for a specific tuk-tuk",
+          summary: "History for one tuk-tuk (optional date range)",
+          description:
+            "Returns movement logs for the given **tukTukId** only. Use query params **from** and **to** (ISO 8601 date-time) to restrict **recorded_at** inclusively (`recorded_at >= from` and `recorded_at <= to`). Omit both for all logs (up to server limit). Latest-first: use sortBy **recordedAt** and sortOrder **desc** (defaults).",
           security: [{ bearerAuth: [] }],
           parameters: [
-            IntIdParam("tukTukId", "Tuk-tuk id"),
-            { name: "from", in: "query", required: false, schema: { type: "string", format: "date-time" } },
-            { name: "to", in: "query", required: false, schema: { type: "string", format: "date-time" } },
-            { name: "provinceId", in: "query", required: false, schema: { type: "integer", minimum: 1 } },
-            { name: "districtId", in: "query", required: false, schema: { type: "integer", minimum: 1 } },
-            { name: "stationId", in: "query", required: false, schema: { type: "integer", minimum: 1 } },
+            IntIdParam("tukTukId", "Tuk-tuk id (vehicle primary key)"),
+            {
+              name: "from",
+              in: "query",
+              required: false,
+              description: "Start of time window (inclusive). Filters on location_logs.recorded_at.",
+              schema: { type: "string", format: "date-time" },
+              example: "2026-01-01T00:00:00.000Z"
+            },
+            {
+              name: "to",
+              in: "query",
+              required: false,
+              description: "End of time window (inclusive). Filters on location_logs.recorded_at.",
+              schema: { type: "string", format: "date-time" },
+              example: "2026-01-31T23:59:59.999Z"
+            },
+            {
+              name: "provinceId",
+              in: "query",
+              required: false,
+              description: "Optional extra geo filter (must sit within caller scope).",
+              schema: { type: "integer", minimum: 1 }
+            },
+            {
+              name: "districtId",
+              in: "query",
+              required: false,
+              description: "Optional extra geo filter (must sit within caller scope).",
+              schema: { type: "integer", minimum: 1 }
+            },
+            {
+              name: "stationId",
+              in: "query",
+              required: false,
+              description: "Optional extra geo filter (must sit within caller scope).",
+              schema: { type: "integer", minimum: 1 }
+            },
             {
               name: "sortBy",
               in: "query",
               required: false,
+              description: "Sort field for log rows.",
               schema: { type: "string", enum: ["recordedAt", "logId", "tukTukId"], default: "recordedAt" }
             },
             {
               name: "sortOrder",
               in: "query",
               required: false,
+              description: "Sort direction.",
               schema: { type: "string", enum: ["asc", "desc"], default: "desc" }
             },
             {
               name: "If-None-Match",
               in: "header",
               required: false,
+              description: "Weak ETag from a prior identical GET (same URL + authorization scope).",
               schema: { type: "string" }
             }
           ],
