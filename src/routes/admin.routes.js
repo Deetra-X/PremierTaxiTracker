@@ -19,8 +19,8 @@ export function adminRoutes() {
   r.use("/provinces", provincesAdminRoutes());
   r.use("/districts", districtsAdminRoutes());
   r.use("/stations", stationsAdminRoutes());
-  r.use("/drivers", driversAdminRoutes());
-  r.use("/devices", devicesAdminRoutes());
+  r.use("/drivers", requireRoles("HQ_ADMIN"), driversAdminRoutes());
+  r.use("/devices", requireRoles("HQ_ADMIN"), devicesAdminRoutes());
   r.use("/tuk-tuks", tukTuksAdminRoutes());
   r.use("/users", usersAdminRoutes());
 
