@@ -14,7 +14,10 @@ if (!process.env.JWT_SECRET) {
 }
 
 const request = (await import("supertest")).default;
+const express = (await import("express")).default;
 const { createApp } = await import("../src/app.js");
+const { apiErrorHandler } = await import("../src/middleware/error.middleware.js");
+const { devicesAdminRoutes } = await import("../src/modules/admin/devices/devices.routes.js");
 
 test("GET /health returns ETag and 304 when If-None-Match matches", async () => {
   const app = createApp();
@@ -41,6 +44,27 @@ test("GET /api/tracking/live with invalid Bearer token returns 401", async () =>
     .set("Authorization", "Bearer not.a.valid.jwt");
   assert.equal(res.status, 401);
   assert.equal(res.body?.error?.code, "UNAUTHORIZED");
+});
+
+test("provincial officers cannot access GPS device admin APIs", async () => {
+  const app = express();
+  app.use((_req, _res, next) => {
+    _req.user = {
+      role: "PROVINCIAL_OFFICER",
+      scope: { provinceId: 1, districtId: null, stationId: null }
+    };
+    next();
+  });
+  app.use("/devices", devicesAdminRoutes());
+  app.use(apiErrorHandler);
+
+  const list = await request(app).get("/devices/");
+  assert.equal(list.status, 403);
+  assert.equal(list.body?.error?.code, "FORBIDDEN");
+
+  const rotate = await request(app).post("/devices/1/rotate-key");
+  assert.equal(rotate.status, 403);
+  assert.equal(rotate.body?.error?.code, "FORBIDDEN");
 });
 
 test("global rate limit returns 429 after TEST_GLOBAL_RATE_LIMIT requests to /health", async () => {
