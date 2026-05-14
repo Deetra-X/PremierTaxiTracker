@@ -276,7 +276,7 @@ export async function getHistory({ query, user }) {
     where.push(`ll.recorded_at <= $${params.length}`);
   }
 
-  if (provinceId || districtId || user.role !== "HQ_ADMIN") {
+  if (provinceId || districtId || stationId || user.role !== "HQ_ADMIN") {
     // join for filters
     if (provinceId) {
       params.push(provinceId);
