@@ -12,9 +12,17 @@ process.env.TEST_GLOBAL_RATE_LIMIT = "5";
 if (!process.env.JWT_SECRET) {
   process.env.JWT_SECRET = "unit-test-jwt-secret-at-least-32-characters-long";
 }
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = "postgres://test:test@127.0.0.1:5432/test";
+}
 
+const express = (await import("express")).default;
 const request = (await import("supertest")).default;
 const { createApp } = await import("../src/app.js");
+const { apiErrorHandler } = await import("../src/middleware/error.middleware.js");
+const { devicesAdminRoutes } = await import("../src/modules/admin/devices/devices.routes.js");
+const { getHistory } = await import("../src/modules/tracking/tracking.service.js");
+const { pool } = await import("../src/config/db.js");
 
 test("GET /health returns ETag and 304 when If-None-Match matches", async () => {
   const app = createApp();
@@ -41,6 +49,45 @@ test("GET /api/tracking/live with invalid Bearer token returns 401", async () =>
     .set("Authorization", "Bearer not.a.valid.jwt");
   assert.equal(res.status, 401);
   assert.equal(res.body?.error?.code, "UNAUTHORIZED");
+});
+
+test("provincial admins cannot access global device API-key management", async () => {
+  const app = express();
+  app.use((req, _res, next) => {
+    req.user = { role: "PROVINCIAL_OFFICER" };
+    next();
+  });
+  app.use("/", devicesAdminRoutes());
+  app.use(apiErrorHandler);
+
+  const res = await request(app).get("/");
+  assert.equal(res.status, 403);
+  assert.equal(res.body?.error?.code, "FORBIDDEN");
+});
+
+test("getHistory applies stationId filter for HQ users", async () => {
+  const originalQuery = pool.query;
+  const queries = [];
+  pool.query = async (sql, params) => {
+    queries.push({ sql, params });
+    return { rows: [], rowCount: 0 };
+  };
+
+  try {
+    await getHistory({
+      query: { stationId: 42, sortBy: "recordedAt", sortOrder: "desc" },
+      user: {
+        role: "HQ_ADMIN",
+        scope: { provinceId: null, districtId: null, stationId: null }
+      }
+    });
+  } finally {
+    pool.query = originalQuery;
+  }
+
+  assert.equal(queries.length, 1);
+  assert.match(queries[0].sql, /t\.station_id = \$1/);
+  assert.deepEqual(queries[0].params, [42]);
 });
 
 test("global rate limit returns 429 after TEST_GLOBAL_RATE_LIMIT requests to /health", async () => {
