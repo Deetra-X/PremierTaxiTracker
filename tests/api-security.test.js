@@ -12,9 +12,15 @@ process.env.TEST_GLOBAL_RATE_LIMIT = "5";
 if (!process.env.JWT_SECRET) {
   process.env.JWT_SECRET = "unit-test-jwt-secret-at-least-32-characters-long";
 }
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = "postgres://unit-test:unit-test@localhost:5432/unit-test";
+}
 
+const express = (await import("express")).default;
 const request = (await import("supertest")).default;
 const { createApp } = await import("../src/app.js");
+const { apiErrorHandler } = await import("../src/middleware/error.middleware.js");
+const { devicesAdminRoutes } = await import("../src/modules/admin/devices/devices.routes.js");
 
 test("GET /health returns ETag and 304 when If-None-Match matches", async () => {
   const app = createApp();
@@ -54,4 +60,28 @@ test("global rate limit returns 429 after TEST_GLOBAL_RATE_LIMIT requests to /he
 
   const blocked = await request(app).get("/health");
   assert.equal(blocked.status, 429);
+});
+
+test("provincial admins cannot access GPS device administration", async () => {
+  const app = express();
+  app.use(express.json());
+  app.use((req, _res, next) => {
+    req.user = { role: "PROVINCIAL_OFFICER" };
+    next();
+  });
+  app.use("/devices", devicesAdminRoutes());
+  app.use(apiErrorHandler);
+
+  const requests = [
+    request(app).get("/devices"),
+    request(app).post("/devices").send({ imeiNumber: "1234567890" }),
+    request(app).patch("/devices/1").send({ status: "INACTIVE" }),
+    request(app).post("/devices/1/rotate-key")
+  ];
+
+  for (const pending of requests) {
+    const res = await pending;
+    assert.equal(res.status, 403);
+    assert.equal(res.body?.error?.code, "FORBIDDEN");
+  }
 });
