@@ -555,12 +555,14 @@ export function buildOpenApiSpec() {
         get: {
           tags: ["Admin"],
           summary: "List GPS devices",
+          description: "HQ administrators only.",
           security: [{ bearerAuth: [] }],
           responses: { 200: { description: "OK", content: { "application/json": { schema: ApiOk({}) } } } }
         },
         post: {
           tags: ["Admin"],
           summary: "Create GPS device",
+          description: "HQ administrators only.",
           security: [{ bearerAuth: [] }],
           requestBody: { required: true, content: { "application/json": { schema: { type: "object" } } } },
           responses: { 201: { description: "Created", content: { "application/json": { schema: ApiOk({}) } } } }
@@ -570,6 +572,7 @@ export function buildOpenApiSpec() {
         patch: {
           tags: ["Admin"],
           summary: "Update GPS device",
+          description: "HQ administrators only.",
           security: [{ bearerAuth: [] }],
           parameters: [IntIdParam("deviceId", "Device id")],
           requestBody: { required: true, content: { "application/json": { schema: { type: "object" } } } },
@@ -580,6 +583,7 @@ export function buildOpenApiSpec() {
         post: {
           tags: ["Admin"],
           summary: "Rotate GPS device API key",
+          description: "HQ administrators only.",
           security: [{ bearerAuth: [] }],
           parameters: [IntIdParam("deviceId", "Device id")],
           responses: { 200: { description: "OK", content: { "application/json": { schema: ApiOk({}) } } } }
