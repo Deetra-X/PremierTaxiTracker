@@ -23,7 +23,7 @@ const DeviceUpdateSchema = z.object({
 
 export async function listDevicesController(req, res, next) {
   try {
-    const data = await listDevices();
+    const data = await listDevices({ user: req.user });
     res.json({ ok: true, data });
   } catch (err) {
     next(err);
@@ -47,7 +47,7 @@ export async function updateDeviceController(req, res, next) {
     if (!Number.isInteger(deviceId)) throw createHttpError(400, "Invalid id", "VALIDATION_ERROR");
     const parsed = DeviceUpdateSchema.safeParse(req.body);
     if (!parsed.success) throw createHttpError(400, "Invalid payload", "VALIDATION_ERROR");
-    const data = await updateDevice({ deviceId, input: parsed.data });
+    const data = await updateDevice({ user: req.user, deviceId, input: parsed.data });
     res.json({ ok: true, data });
   } catch (err) {
     next(err);
@@ -58,7 +58,7 @@ export async function rotateDeviceKeyController(req, res, next) {
   try {
     const deviceId = Number(req.params.deviceId);
     if (!Number.isInteger(deviceId)) throw createHttpError(400, "Invalid id", "VALIDATION_ERROR");
-    const data = await rotateDeviceKey({ deviceId });
+    const data = await rotateDeviceKey({ user: req.user, deviceId });
     res.json({ ok: true, data });
   } catch (err) {
     next(err);

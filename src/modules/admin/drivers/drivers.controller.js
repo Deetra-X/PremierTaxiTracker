@@ -20,7 +20,7 @@ const DriverUpdateSchema = z.object({
 
 export async function listDriversController(req, res, next) {
   try {
-    const data = await listDrivers();
+    const data = await listDrivers({ user: req.user });
     res.json({ ok: true, data });
   } catch (err) {
     next(err);
@@ -44,7 +44,7 @@ export async function updateDriverController(req, res, next) {
     if (!Number.isInteger(driverId)) throw createHttpError(400, "Invalid id", "VALIDATION_ERROR");
     const parsed = DriverUpdateSchema.safeParse(req.body);
     if (!parsed.success) throw createHttpError(400, "Invalid payload", "VALIDATION_ERROR");
-    const data = await updateDriver({ driverId, input: parsed.data });
+    const data = await updateDriver({ user: req.user, driverId, input: parsed.data });
     res.json({ ok: true, data });
   } catch (err) {
     next(err);
