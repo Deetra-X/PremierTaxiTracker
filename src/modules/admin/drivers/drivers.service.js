@@ -1,7 +1,50 @@
 import { pool } from "../../../config/db.js";
 import { createHttpError } from "../../../middleware/error.middleware.js";
 
-export async function listDrivers() {
+function isProvincialOfficer(user) {
+  return user?.role === "PROVINCIAL_OFFICER";
+}
+
+async function assertDriverProvinceAccess({ user, driverId }) {
+  if (user?.role === "HQ_ADMIN") return;
+  if (!isProvincialOfficer(user)) throw createHttpError(403, "Forbidden", "FORBIDDEN");
+
+  const r = await pool.query(
+    `select d.driver_id, t.province_id
+     from drivers d
+     left join tuk_tuks t on t.driver_id = d.driver_id
+     where d.driver_id = $1`,
+    [driverId]
+  );
+  if (!r.rowCount) throw createHttpError(404, "Driver not found", "NOT_FOUND");
+
+  const allowedProvinceId = Number(user.scope.provinceId);
+  const allLinksInProvince = r.rows.every(
+    (row) => Number(row.province_id) === allowedProvinceId
+  );
+  if (!allLinksInProvince) throw createHttpError(403, "Forbidden", "FORBIDDEN");
+}
+
+export async function listDrivers({ user }) {
+  if (isProvincialOfficer(user)) {
+    const r = await pool.query(
+      `select distinct d.driver_id, d.full_name, d.nic_number, d.phone_number, d.address, d.license_number, d.created_at
+       from drivers d
+       join tuk_tuks t on t.driver_id = d.driver_id
+       where t.province_id = $1
+         and not exists (
+           select 1
+           from tuk_tuks other_t
+           where other_t.driver_id = d.driver_id
+             and other_t.province_id is distinct from $1
+         )
+       order by d.driver_id`,
+      [user.scope.provinceId]
+    );
+    return r.rows;
+  }
+  if (user?.role !== "HQ_ADMIN") throw createHttpError(403, "Forbidden", "FORBIDDEN");
+
   const r = await pool.query(
     `select driver_id, full_name, nic_number, phone_number, address, license_number, created_at
      from drivers
@@ -26,13 +69,14 @@ export async function createDriver({ input }) {
   return r.rows[0];
 }
 
-export async function updateDriver({ driverId, input }) {
+export async function updateDriver({ user, driverId, input }) {
   const current = await pool.query(
     `select driver_id, full_name, nic_number, phone_number, address, license_number, created_at
      from drivers where driver_id = $1`,
     [driverId]
   );
   if (!current.rowCount) throw createHttpError(404, "Driver not found", "NOT_FOUND");
+  await assertDriverProvinceAccess({ user, driverId });
 
   const row = current.rows[0];
   const next = {
