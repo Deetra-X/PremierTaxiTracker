@@ -7,11 +7,40 @@ function genKey() {
   return crypto.randomBytes(24).toString("hex");
 }
 
-export async function listDevices() {
+async function assertDeviceAccess({ user, deviceId }) {
+  if (user.role === "HQ_ADMIN") return;
+  if (user.role !== "PROVINCIAL_OFFICER") {
+    throw createHttpError(403, "Forbidden", "FORBIDDEN");
+  }
+
   const r = await pool.query(
-    `select device_id, imei_number, sim_number, status, installed_date, api_key
-     from gps_devices
-     order by device_id`
+    `select 1
+     from tuk_tuks
+     where device_id = $1 and province_id = $2
+     limit 1`,
+    [deviceId, user.scope.provinceId]
+  );
+  if (!r.rowCount) throw createHttpError(403, "Forbidden", "FORBIDDEN");
+}
+
+export async function listDevices({ user }) {
+  const params = [];
+  let whereSql = "";
+  if (user.role === "PROVINCIAL_OFFICER") {
+    params.push(user.scope.provinceId);
+    whereSql = `where exists (
+       select 1
+       from tuk_tuks t
+       where t.device_id = gd.device_id and t.province_id = $1
+     )`;
+  }
+
+  const r = await pool.query(
+    `select gd.device_id, gd.imei_number, gd.sim_number, gd.status, gd.installed_date, gd.api_key
+     from gps_devices gd
+     ${whereSql}
+     order by gd.device_id`,
+    params
   );
   return r.rows;
 }
@@ -35,13 +64,14 @@ export async function createDevice({ input }) {
   return r.rows[0];
 }
 
-export async function updateDevice({ deviceId, input }) {
+export async function updateDevice({ user, deviceId, input }) {
   const current = await pool.query(
     `select device_id, imei_number, sim_number, status, installed_date, api_key
      from gps_devices where device_id = $1`,
     [deviceId]
   );
   if (!current.rowCount) throw createHttpError(404, "Device not found", "NOT_FOUND");
+  await assertDeviceAccess({ user, deviceId });
   const row = current.rows[0];
   const next = {
     simNumber: input.simNumber ?? row.sim_number,
@@ -58,7 +88,11 @@ export async function updateDevice({ deviceId, input }) {
   return r.rows[0];
 }
 
-export async function rotateDeviceKey({ deviceId }) {
+export async function rotateDeviceKey({ user, deviceId }) {
+  const current = await pool.query("select device_id from gps_devices where device_id = $1", [deviceId]);
+  if (!current.rowCount) throw createHttpError(404, "Device not found", "NOT_FOUND");
+  await assertDeviceAccess({ user, deviceId });
+
   await pool.query("alter table gps_devices add column if not exists api_key text unique");
 
   const r = await pool.query(
