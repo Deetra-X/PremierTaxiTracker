@@ -14,7 +14,58 @@ if (!process.env.JWT_SECRET) {
 }
 
 const request = (await import("supertest")).default;
+const jwt = (await import("jsonwebtoken")).default;
 const { createApp } = await import("../src/app.js");
+const { pool } = await import("../src/config/db.js");
+
+function signTestToken({ userId = 7, tokenVersion = 0 } = {}) {
+  return jwt.sign(
+    { sub: String(userId), ver: tokenVersion },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "1h",
+      issuer: process.env.JWT_ISSUER ?? "tuk-tuk-api",
+      audience: process.env.JWT_AUDIENCE ?? "tuk-tuk-web",
+      algorithm: process.env.JWT_ALG ?? "HS256"
+    }
+  );
+}
+
+async function withProvincialOfficerAuth(run) {
+  const originalQuery = pool.query;
+  pool.query = async (sql, params) => {
+    const text = String(sql);
+    if (text.includes("from users where user_id = $1")) {
+      assert.deepEqual(params, [7]);
+      return {
+        rowCount: 1,
+        rows: [
+          {
+            user_id: 7,
+            station_id: 11,
+            role: "PROVINCIAL_OFFICER",
+            is_active: true,
+            token_version: 0
+          }
+        ]
+      };
+    }
+    if (text.includes("from police_stations ps")) {
+      assert.deepEqual(params, [11]);
+      return {
+        rowCount: 1,
+        rows: [{ station_id: 11, district_id: 22, province_id: 33 }]
+      };
+    }
+    throw new Error(`Unexpected query for provincial officer route test: ${text}`);
+  };
+
+  try {
+    await run(signTestToken());
+  } finally {
+    pool.query = originalQuery;
+  }
+}
 
 test("GET /health returns ETag and 304 when If-None-Match matches", async () => {
   const app = createApp();
@@ -41,6 +92,17 @@ test("GET /api/tracking/live with invalid Bearer token returns 401", async () =>
     .set("Authorization", "Bearer not.a.valid.jwt");
   assert.equal(res.status, 401);
   assert.equal(res.body?.error?.code, "UNAUTHORIZED");
+});
+
+test("PROVINCIAL_OFFICER cannot access unscoped drivers or device API keys", async () => {
+  await withProvincialOfficerAuth(async (token) => {
+    const app = createApp();
+    for (const path of ["/api/admin/drivers", "/api/admin/devices"]) {
+      const res = await request(app).get(path).set("Authorization", `Bearer ${token}`);
+      assert.equal(res.status, 403, `expected ${path} to be HQ-only`);
+      assert.equal(res.body?.error?.code, "FORBIDDEN");
+    }
+  });
 });
 
 test("global rate limit returns 429 after TEST_GLOBAL_RATE_LIMIT requests to /health", async () => {
