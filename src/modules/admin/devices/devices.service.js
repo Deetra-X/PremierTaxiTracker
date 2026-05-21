@@ -7,11 +7,56 @@ function genKey() {
   return crypto.randomBytes(24).toString("hex");
 }
 
-export async function listDevices() {
+async function assertDeviceProvinceAccess({ user, deviceId }) {
+  if (user.role === "HQ_ADMIN") return;
+  if (user.role !== "PROVINCIAL_OFFICER" || !user.scope?.provinceId) {
+    throw createHttpError(403, "Forbidden", "FORBIDDEN");
+  }
+
+  const r = await pool.query(
+    `select
+        count(gd.device_id)::int as device_count,
+        count(t.tuk_tuk_id) filter (where t.province_id = $2)::int as in_scope_assignments,
+        count(t.tuk_tuk_id) filter (where t.province_id is distinct from $2)::int as out_of_scope_assignments
+     from gps_devices gd
+     left join tuk_tuks t on t.device_id = gd.device_id
+     where gd.device_id = $1`,
+    [deviceId, user.scope.provinceId]
+  );
+
+  const row = r.rows[0] ?? {};
+  if (Number(row.device_count ?? 0) === 0) {
+    throw createHttpError(404, "Device not found", "NOT_FOUND");
+  }
+  if (
+    Number(row.in_scope_assignments ?? 0) < 1 ||
+    Number(row.out_of_scope_assignments ?? 0) > 0
+  ) {
+    throw createHttpError(403, "Forbidden (province scope)", "FORBIDDEN");
+  }
+}
+
+export async function listDevices({ user }) {
+  const params = [];
+  let whereSql = "";
+  if (user.role === "PROVINCIAL_OFFICER") {
+    params.push(user.scope.provinceId);
+    whereSql = `where exists (
+        select 1 from tuk_tuks t
+        where t.device_id = gd.device_id and t.province_id = $1
+      )
+      and not exists (
+        select 1 from tuk_tuks t
+        where t.device_id = gd.device_id and t.province_id is distinct from $1
+      )`;
+  }
+
   const r = await pool.query(
     `select device_id, imei_number, sim_number, status, installed_date, api_key
-     from gps_devices
-     order by device_id`
+     from gps_devices gd
+     ${whereSql}
+     order by device_id`,
+    params
   );
   return r.rows;
 }
@@ -35,7 +80,9 @@ export async function createDevice({ input }) {
   return r.rows[0];
 }
 
-export async function updateDevice({ deviceId, input }) {
+export async function updateDevice({ user, deviceId, input }) {
+  await assertDeviceProvinceAccess({ user, deviceId });
+
   const current = await pool.query(
     `select device_id, imei_number, sim_number, status, installed_date, api_key
      from gps_devices where device_id = $1`,
@@ -58,7 +105,8 @@ export async function updateDevice({ deviceId, input }) {
   return r.rows[0];
 }
 
-export async function rotateDeviceKey({ deviceId }) {
+export async function rotateDeviceKey({ user, deviceId }) {
+  await assertDeviceProvinceAccess({ user, deviceId });
   await pool.query("alter table gps_devices add column if not exists api_key text unique");
 
   const r = await pool.query(
