@@ -7,6 +7,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import jwt from "jsonwebtoken";
 
 process.env.TEST_GLOBAL_RATE_LIMIT = "5";
 if (!process.env.JWT_SECRET) {
@@ -15,6 +16,56 @@ if (!process.env.JWT_SECRET) {
 
 const request = (await import("supertest")).default;
 const { createApp } = await import("../src/app.js");
+const { pool } = await import("../src/config/db.js");
+const { createUser, updateUser } = await import("../src/modules/admin/users/users.service.js");
+
+function signAuthToken(userId) {
+  return jwt.sign(
+    { sub: String(userId), ver: 0 },
+    process.env.JWT_SECRET,
+    { issuer: "tuk-tuk-api", audience: "tuk-tuk-web", algorithm: "HS256", expiresIn: "1h" }
+  );
+}
+
+function stubProvincialAuth(t, { userId = 42, stationId = 10, districtId = 20, provinceId = 30 } = {}) {
+  const originalQuery = pool.query;
+  t.after(() => {
+    pool.query = originalQuery;
+  });
+
+  let protectedResourceQueried = false;
+  pool.query = async (sql, params) => {
+    const text = String(sql);
+    if (text.includes("from users where user_id = $1")) {
+      assert.deepEqual(params, [userId]);
+      return {
+        rowCount: 1,
+        rows: [{
+          user_id: userId,
+          station_id: stationId,
+          role: "PROVINCIAL_OFFICER",
+          is_active: true,
+          token_version: 0
+        }]
+      };
+    }
+    if (text.includes("from police_stations ps")) {
+      assert.deepEqual(params, [stationId]);
+      return {
+        rowCount: 1,
+        rows: [{ station_id: stationId, district_id: districtId, province_id: provinceId }]
+      };
+    }
+
+    protectedResourceQueried = true;
+    throw new Error(`unexpected query after authorization guard: ${text}`);
+  };
+
+  return {
+    token: signAuthToken(userId),
+    wasProtectedResourceQueried: () => protectedResourceQueried
+  };
+}
 
 test("GET /health returns ETag and 304 when If-None-Match matches", async () => {
   const app = createApp();
@@ -41,6 +92,93 @@ test("GET /api/tracking/live with invalid Bearer token returns 401", async () =>
     .set("Authorization", "Bearer not.a.valid.jwt");
   assert.equal(res.status, 401);
   assert.equal(res.body?.error?.code, "UNAUTHORIZED");
+});
+
+test("provincial officer cannot access HQ-only device and driver admin data", async (t) => {
+  const app = createApp();
+  const auth = stubProvincialAuth(t);
+
+  const devices = await request(app)
+    .get("/api/admin/devices")
+    .set("Authorization", `Bearer ${auth.token}`);
+  assert.equal(devices.status, 403);
+  assert.equal(devices.body?.error?.code, "FORBIDDEN");
+
+  const drivers = await request(app)
+    .get("/api/admin/drivers")
+    .set("Authorization", `Bearer ${auth.token}`);
+  assert.equal(drivers.status, 403);
+  assert.equal(drivers.body?.error?.code, "FORBIDDEN");
+
+  assert.equal(auth.wasProtectedResourceQueried(), false);
+});
+
+test("provincial officer cannot create or promote provincial admins", async (t) => {
+  const actor = {
+    role: "PROVINCIAL_OFFICER",
+    scope: { provinceId: 30, districtId: null, stationId: null }
+  };
+
+  await assert.rejects(
+    () => createUser({
+      user: actor,
+      input: {
+        fullName: "Province Admin",
+        email: "province-admin@example.test",
+        role: "PROVINCIAL_OFFICER",
+        stationId: 10,
+        password: "secret123"
+      }
+    }),
+    (err) => err?.status === 403 && err?.code === "FORBIDDEN"
+  );
+
+  const originalQuery = pool.query;
+  t.after(() => {
+    pool.query = originalQuery;
+  });
+
+  let updateAttempted = false;
+  pool.query = async (sql, params) => {
+    const text = String(sql);
+    if (text.includes("from users where user_id = $1")) {
+      assert.deepEqual(params, [77]);
+      return {
+        rowCount: 1,
+        rows: [{
+          user_id: 77,
+          station_id: 10,
+          full_name: "Station Officer",
+          email: "station-officer@example.test",
+          role: "STATION_OFFICER",
+          is_active: true,
+          created_at: "2026-01-01T00:00:00.000Z"
+        }]
+      };
+    }
+    if (text.includes("from police_stations ps")) {
+      assert.deepEqual(params, [10]);
+      return {
+        rowCount: 1,
+        rows: [{ station_id: 10, district_id: 20, province_id: 30 }]
+      };
+    }
+
+    if (text.includes("update users")) {
+      updateAttempted = true;
+    }
+    throw new Error(`unexpected query while checking role escalation: ${text}`);
+  };
+
+  await assert.rejects(
+    () => updateUser({
+      user: actor,
+      userId: 77,
+      input: { role: "PROVINCIAL_OFFICER" }
+    }),
+    (err) => err?.status === 403 && err?.code === "FORBIDDEN"
+  );
+  assert.equal(updateAttempted, false);
 });
 
 test("global rate limit returns 429 after TEST_GLOBAL_RATE_LIMIT requests to /health", async () => {

@@ -6,9 +6,11 @@ import {
   rotateDeviceKeyController,
   updateDeviceController
 } from "./devices.controller.js";
+import { requireRoles } from "../../../middleware/rbac.middleware.js";
 
 export function devicesAdminRoutes() {
   const r = Router();
+  r.use(requireRoles("HQ_ADMIN"));
   r.get("/", listDevicesController);
   r.post("/", createDeviceController);
   r.patch("/:deviceId", updateDeviceController);
