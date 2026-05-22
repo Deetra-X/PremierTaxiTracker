@@ -13,6 +13,9 @@ process.env.TEST_GLOBAL_RATE_LIMIT = "5";
 if (!process.env.JWT_SECRET) {
   process.env.JWT_SECRET = "unit-test-jwt-secret-at-least-32-characters-long";
 }
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = "postgres://unit:unit@localhost:5432/unit_test";
+}
 
 const request = (await import("supertest")).default;
 const { createApp } = await import("../src/app.js");
