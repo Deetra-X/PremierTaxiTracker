@@ -22,6 +22,13 @@ function validateRoleStation(role, stationId) {
   }
 }
 
+function assertCanManageUserRole({ actor, targetRole }) {
+  if (actor.role === "HQ_ADMIN") return;
+  if (targetRole === "HQ_ADMIN" || targetRole === "PROVINCIAL_OFFICER") {
+    throw createHttpError(403, "Forbidden", "FORBIDDEN");
+  }
+}
+
 export async function listUsers({ user }) {
   const params = [];
   const where = [];
@@ -51,9 +58,7 @@ export async function listUsers({ user }) {
 }
 
 export async function createUser({ user, input }) {
-  if (input.role === "HQ_ADMIN" && user.role !== "HQ_ADMIN") {
-    throw createHttpError(403, "Forbidden", "FORBIDDEN");
-  }
+  assertCanManageUserRole({ actor: user, targetRole: input.role });
 
   validateRoleStation(input.role, input.stationId ?? null);
 
@@ -89,6 +94,8 @@ export async function updateUser({ user, userId, input }) {
   if (!current.rowCount) throw createHttpError(404, "User not found", "NOT_FOUND");
   const row = current.rows[0];
 
+  assertCanManageUserRole({ actor: user, targetRole: row.role });
+
   // scope enforcement for provincial (only users in province)
   if (user.role === "PROVINCIAL_OFFICER") {
     if (!row.station_id) throw createHttpError(403, "Forbidden", "FORBIDDEN");
@@ -104,9 +111,7 @@ export async function updateUser({ user, userId, input }) {
     isActive: input.isActive ?? row.is_active
   };
 
-  if (next.role === "HQ_ADMIN" && user.role !== "HQ_ADMIN") {
-    throw createHttpError(403, "Forbidden", "FORBIDDEN");
-  }
+  assertCanManageUserRole({ actor: user, targetRole: next.role });
 
   validateRoleStation(next.role, next.stationId);
 
