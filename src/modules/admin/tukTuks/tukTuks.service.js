@@ -15,6 +15,28 @@ const LIST_ORDER_MAP = {
   districtId: "t.district_id"
 };
 
+async function assertTukTukGeoScope({ user, provinceId, districtId, stationId }) {
+  if (districtId && !provinceId) {
+    throw createHttpError(400, "District requires province", "VALIDATION_ERROR");
+  }
+  if (stationId && !districtId) {
+    throw createHttpError(400, "Station requires district", "VALIDATION_ERROR");
+  }
+
+  if (provinceId) {
+    await assertProvinceAccess({ user, provinceId });
+  } else if (user.role === "PROVINCIAL_OFFICER") {
+    throw createHttpError(403, "Forbidden (province scope)", "FORBIDDEN");
+  }
+
+  if (districtId) {
+    await assertDistrictInProvince({ districtId, provinceId });
+  }
+  if (stationId) {
+    await assertStationInDistrict({ stationId, districtId });
+  }
+}
+
 export async function listTukTuks({ user, sortBy, sortOrder }) {
   const params = [];
   const where = [];
@@ -54,12 +76,12 @@ export async function createTukTuk({ user, input }) {
     input.provinceId = user.scope.provinceId;
   }
 
-  if (input.districtId && input.provinceId) {
-    await assertDistrictInProvince({ districtId: input.districtId, provinceId: input.provinceId });
-  }
-  if (input.stationId && input.districtId) {
-    await assertStationInDistrict({ stationId: input.stationId, districtId: input.districtId });
-  }
+  await assertTukTukGeoScope({
+    user,
+    provinceId: input.provinceId,
+    districtId: input.districtId,
+    stationId: input.stationId
+  });
 
   const r = await pool.query(
     `insert into tuk_tuks
@@ -113,13 +135,12 @@ export async function updateTukTuk({ user, tukTukId, input }) {
     isActive: input.isActive ?? row.is_active
   };
 
-  if (next.provinceId) await assertProvinceAccess({ user, provinceId: next.provinceId });
-  if (next.districtId && next.provinceId) {
-    await assertDistrictInProvince({ districtId: next.districtId, provinceId: next.provinceId });
-  }
-  if (next.stationId && next.districtId) {
-    await assertStationInDistrict({ stationId: next.stationId, districtId: next.districtId });
-  }
+  await assertTukTukGeoScope({
+    user,
+    provinceId: next.provinceId,
+    districtId: next.districtId,
+    stationId: next.stationId
+  });
 
   const r = await pool.query(
     `update tuk_tuks
