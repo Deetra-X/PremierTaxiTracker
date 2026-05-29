@@ -1,12 +1,34 @@
 import { pool } from "../../config/db.js";
 import { createHttpError } from "../../middleware/error.middleware.js";
 
+export const MAX_RECORDED_AT_FUTURE_SKEW_MS = 5 * 60 * 1000;
+
 async function getTukTukById(id) {
   const r = await pool.query(
     "select tuk_tuk_id, device_id, is_active from tuk_tuks where tuk_tuk_id = $1",
     [id]
   );
   return r.rows[0] ?? null;
+}
+
+export function normalizePingRecordedAt(recordedAt, now = new Date()) {
+  if (recordedAt === undefined) return now.toISOString();
+
+  const parsed = new Date(recordedAt);
+  const parsedTime = parsed.getTime();
+  if (!Number.isFinite(parsedTime)) {
+    throw createHttpError(400, "Invalid recordedAt", "VALIDATION_ERROR");
+  }
+
+  if (parsedTime - now.getTime() > MAX_RECORDED_AT_FUTURE_SKEW_MS) {
+    throw createHttpError(
+      400,
+      "recordedAt cannot be more than 5 minutes in the future",
+      "VALIDATION_ERROR"
+    );
+  }
+
+  return parsed.toISOString();
 }
 
 export async function ingestPing({ device, body }) {
@@ -19,7 +41,7 @@ export async function ingestPing({ device, body }) {
     throw createHttpError(403, "Device not assigned to this tuk-tuk", "FORBIDDEN");
   }
 
-  const recordedAt = body.recordedAt ?? new Date().toISOString();
+  const recordedAt = normalizePingRecordedAt(body.recordedAt);
 
   const r = await pool.query(
     `insert into location_logs

@@ -88,7 +88,11 @@ export function buildOpenApiSpec() {
             latitude: { type: "number", minimum: -90, maximum: 90 },
             longitude: { type: "number", minimum: -180, maximum: 180 },
             speedKmh: { type: "number", minimum: 0, maximum: 250 },
-            recordedAt: { type: "string", format: "date-time" },
+            recordedAt: {
+              type: "string",
+              format: "date-time",
+              description: "Optional device timestamp; must not be more than five minutes in the future."
+            },
             locationDescription: { type: "string", maxLength: 255 }
           }
         }
