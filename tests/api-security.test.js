@@ -9,12 +9,18 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 process.env.TEST_GLOBAL_RATE_LIMIT = "5";
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = "postgres://unit-test:unit-test@127.0.0.1:5432/unit-test";
+}
 if (!process.env.JWT_SECRET) {
   process.env.JWT_SECRET = "unit-test-jwt-secret-at-least-32-characters-long";
 }
 
 const request = (await import("supertest")).default;
 const { createApp } = await import("../src/app.js");
+const { MAX_RECORDED_AT_FUTURE_SKEW_MS, normalizePingRecordedAt } = await import(
+  "../src/modules/device/device.service.js"
+);
 
 test("GET /health returns ETag and 304 when If-None-Match matches", async () => {
   const app = createApp();
@@ -54,4 +60,14 @@ test("global rate limit returns 429 after TEST_GLOBAL_RATE_LIMIT requests to /he
 
   const blocked = await request(app).get("/health");
   assert.equal(blocked.status, 429);
+});
+
+test("device ping timestamps more than five minutes in the future are rejected", () => {
+  const now = new Date("2026-05-29T11:00:00.000Z");
+  const tooFarFuture = new Date(now.getTime() + MAX_RECORDED_AT_FUTURE_SKEW_MS + 1);
+
+  assert.throws(
+    () => normalizePingRecordedAt(tooFarFuture.toISOString(), now),
+    (err) => err?.status === 400 && err?.code === "VALIDATION_ERROR"
+  );
 });
