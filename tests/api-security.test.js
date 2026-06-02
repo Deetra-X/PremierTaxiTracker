@@ -8,6 +8,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
+process.env.NODE_ENV = "test";
 process.env.TEST_GLOBAL_RATE_LIMIT = "5";
 if (!process.env.JWT_SECRET) {
   process.env.JWT_SECRET = "unit-test-jwt-secret-at-least-32-characters-long";
@@ -54,4 +55,20 @@ test("global rate limit returns 429 after TEST_GLOBAL_RATE_LIMIT requests to /he
 
   const blocked = await request(app).get("/health");
   assert.equal(blocked.status, 429);
+});
+
+test("TEST_GLOBAL_RATE_LIMIT is ignored outside the test environment", async () => {
+  const previousNodeEnv = process.env.NODE_ENV;
+  try {
+    process.env.NODE_ENV = "production";
+    const app = createApp();
+    const testLimit = parseInt(process.env.TEST_GLOBAL_RATE_LIMIT ?? "5", 10);
+
+    for (let i = 0; i <= testLimit; i++) {
+      const res = await request(app).get("/health");
+      assert.equal(res.status, 200, `expected production default to allow request ${i + 1}`);
+    }
+  } finally {
+    process.env.NODE_ENV = previousNodeEnv;
+  }
 });
