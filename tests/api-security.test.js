@@ -9,6 +9,9 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 process.env.NODE_ENV = "test";
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = "postgresql://unit:unit@localhost:5432/unit";
+}
 process.env.TEST_GLOBAL_RATE_LIMIT = "5";
 if (!process.env.JWT_SECRET) {
   process.env.JWT_SECRET = "unit-test-jwt-secret-at-least-32-characters-long";
