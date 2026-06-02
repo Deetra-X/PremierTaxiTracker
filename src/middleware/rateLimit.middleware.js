@@ -7,7 +7,10 @@ function parsePositiveInt(raw, fallback) {
 }
 
 export function createRateLimiters() {
-  const globalLimit = parsePositiveInt(process.env.TEST_GLOBAL_RATE_LIMIT, 300);
+  const globalLimit =
+    process.env.NODE_ENV === "test"
+      ? parsePositiveInt(process.env.TEST_GLOBAL_RATE_LIMIT, 300)
+      : 300;
 
   const global = rateLimit({
     windowMs: 60 * 1000,
