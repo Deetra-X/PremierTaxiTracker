@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 
-dotenv.config({ override: true });
+dotenv.config();
 
 export function getEnv(key, { defaultValue } = {}) {
   const value = process.env[key];

@@ -7,6 +7,10 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
 process.env.TEST_GLOBAL_RATE_LIMIT = "5";
 if (!process.env.JWT_SECRET) {
@@ -54,4 +58,32 @@ test("global rate limit returns 429 after TEST_GLOBAL_RATE_LIMIT requests to /he
 
   const blocked = await request(app).get("/health");
   assert.equal(blocked.status, 429);
+});
+
+test("dotenv loading does not override existing process environment values", async () => {
+  const originalCwd = process.cwd();
+  const tempDir = mkdtempSync(join(tmpdir(), "tuk-tuk-env-test-"));
+  const key = "CURSOR_ENV_PRECEDENCE_TEST";
+  const previousValue = process.env[key];
+
+  try {
+    writeFileSync(join(tempDir, ".env"), `${key}=from_dotenv\n`);
+    process.env[key] = "from_process";
+    process.chdir(tempDir);
+
+    const envModuleUrl =
+      pathToFileURL(resolve(originalCwd, "src/config/env.js")).href +
+      `?env-precedence-test=${Date.now()}`;
+    const { getEnv } = await import(envModuleUrl);
+
+    assert.equal(getEnv(key), "from_process");
+  } finally {
+    process.chdir(originalCwd);
+    if (previousValue === undefined) {
+      delete process.env[key];
+    } else {
+      process.env[key] = previousValue;
+    }
+    rmSync(tempDir, { recursive: true, force: true });
+  }
 });
